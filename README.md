@@ -58,6 +58,16 @@ Ticker symbols must match [Yahoo Finance](https://finance.yahoo.com). For exampl
 
 All user-visible text is translatable through Ki18n, and a Romanian translation ships with the widget. To add another language, see [translate/README.md](translate/README.md).
 
+## Development
+
+The test harness runs the QML unit and controller tests with `qmltestrunner`, offline:
+
+```bash
+./tests/run.sh
+```
+
+It needs the Qt 6 declarative tools (`qmltestrunner`); see [tests/README.md](tests/README.md). The architecture and the refactoring plan live in [docs/architecture.md](docs/architecture.md).
+
 ## Credits
 
 Plasma Stock Monitor is a fork of [Stock Monitor](https://github.com/vpsone/stock-monitor-widget) by [vps (vpsone)](https://github.com/vpsone), with UI contributions by [Cenk Tekin](https://github.com/cenktekin) (badge UI, gain/loss color picker and price precision). The fork is maintained by [Viorel-Cătălin Răpițeanu (Steinhagen)](https://github.com/Steinhagen).
