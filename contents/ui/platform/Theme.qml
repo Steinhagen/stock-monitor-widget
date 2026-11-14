@@ -103,6 +103,12 @@ QtObject {
         return bg.hslLightness > 0.5 ? "#000000" : "#ffffff";
     }
 
+    function blend(fg, bg, amount) {
+        return Qt.rgba(fg.r * amount + bg.r * (1 - amount),
+                       fg.g * amount + bg.g * (1 - amount),
+                       fg.b * amount + bg.b * (1 - amount));
+    }
+
     function readableSecondary(color, bg, textColor) {
         if (contrastRatio(color, bg) >= 2.5) return color;
         return Qt.rgba(textColor.r, textColor.g, textColor.b, 0.65);
@@ -147,7 +153,7 @@ QtObject {
             return appLightPalette ? "#e0e0e0" : "#333333";
         } else if (what === "text") {
             if (usesPlasmaSurface)
-                return Qt.rgba(systemTextColor.r, systemTextColor.g, systemTextColor.b, 0.72);
+                return blend(systemTextColor, surfaceBackground, 0.8);
             return appLightPalette ? "#555555" : "#888888";
         }
         return "";

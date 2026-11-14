@@ -110,10 +110,10 @@ TestCase {
     function test_secondaryOnPlasma() {
         fakeConfig.themePreset = 1;
         var theme = make("#eff0f1", fakeConfig, "#31363b", "#9931363b");
-        // Secondary text is the readable text colour at 72%, not the very faint disabled role.
+        // Secondary text is a solid 80% blend of the text and background.
         compare(theme.systemTextColor, "#31363b");
-        verify(Math.abs(theme.secondaryTextColor.a - 0.72) < 0.001);
-        verify(theme.secondaryTextColor.r < 0.4);
+        verify(theme.secondaryTextColor.a > 0.99);
+        verify(theme.secondaryTextColor.r > 0.15 && theme.secondaryTextColor.r < 0.4);
         fakeConfig.themePreset = 0;
     }
 
