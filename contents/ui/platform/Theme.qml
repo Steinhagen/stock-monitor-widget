@@ -11,26 +11,12 @@ QtObject {
     property color hostTextColor: "#ffffff"
     property color systemBackgroundColor: "#1a1a1a"
     property color hostDisabledTextColor: "#888888"
-    // The full view can live in a different window (the panel popup) with its own
-    // colour scheme. It reports that palette back so the card content follows it.
-    property color viewTextColor: "#ffffff"
-    property color viewBackgroundColor: "#1a1a1a"
-    property color viewDisabledTextColor: "#888888"
-    property bool viewPaletteSet: false
-
-    function setViewPalette(text, background, disabled) {
-        viewTextColor = text;
-        viewBackgroundColor = background;
-        viewDisabledTextColor = disabled;
-        viewPaletteSet = true;
-    }
-
     // Edit mode can hand the widget a text colour that matches the background (Plasma
     // switches the scheme for the toolbox); fall back to readable black or white.
-    readonly property color systemTextColor: readableText(viewPaletteSet ? viewTextColor : hostTextColor, surfaceBackground)
+    readonly property color systemTextColor: readableText(hostTextColor, surfaceBackground)
 
     // The disabled/secondary colour can come from the same mismatched palette.
-    readonly property color systemDisabledTextColor: readableSecondary(viewPaletteSet ? viewDisabledTextColor : hostDisabledTextColor, surfaceBackground, systemTextColor)
+    readonly property color systemDisabledTextColor: readableSecondary(hostDisabledTextColor, surfaceBackground, systemTextColor)
 
 
     // Preset: 0 = Application, 1 = Plasma. -1 is the "not migrated yet" sentinel.
@@ -42,10 +28,10 @@ QtObject {
 
     readonly property bool usesPlasmaSurface: themePreset === 1
     readonly property bool appDrawnSurface: themePreset === 0
-    // Kirigami follows the Plasma color scheme, so the injected background updates when
-    // the system theme changes.
+    // The host palette (SystemPalette) follows the colour scheme, so the injected
+    // background updates when the system theme changes.
     readonly property bool systemLightColors: systemBackgroundColor.hslLightness > 0.5
-    readonly property color surfaceBackground: viewPaletteSet ? viewBackgroundColor : systemBackgroundColor
+    readonly property color surfaceBackground: systemBackgroundColor
     readonly property bool surfaceLightColors: surfaceBackground.hslLightness > 0.5
     readonly property bool appLightPalette: themeColors === 0
                                             || (themeColors === 2 && systemLightColors)

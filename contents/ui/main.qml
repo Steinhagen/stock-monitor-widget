@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import "domain/currencies.js" as Currency
@@ -19,12 +18,15 @@ import "tooltip"
 PlasmoidItem {
     id: root
 
+    SystemPalette { id: systemPalette; colorGroup: SystemPalette.Active }
+    SystemPalette { id: disabledPalette; colorGroup: SystemPalette.Disabled }
+
     App {
         id: app
         configuration: Plasmoid.configuration
-        hostTextColor: Kirigami.Theme.textColor
-        systemBackgroundColor: Kirigami.Theme.backgroundColor
-        hostDisabledTextColor: Kirigami.Theme.disabledTextColor
+        hostTextColor: systemPalette.windowText
+        systemBackgroundColor: systemPalette.window
+        hostDisabledTextColor: disabledPalette.windowText
     }
 
     QuoteStore {
@@ -48,7 +50,6 @@ PlasmoidItem {
     }
 
     readonly property var stockModel: watchlist.model
-    readonly property var theme: app.theme
 
     QuoteCacheController {
         id: quoteCache

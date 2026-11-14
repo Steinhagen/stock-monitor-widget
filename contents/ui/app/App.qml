@@ -10,7 +10,7 @@ Item {
     visible: false
 
     property var configuration: null
-    // Host palette, passed by main.qml from Kirigami.
+    // Host palette, passed by main.qml from SystemPalette.
     property color hostTextColor: "#ffffff"
     property color systemBackgroundColor: "#1a1a1a"
     property color hostDisabledTextColor: "#888888"
