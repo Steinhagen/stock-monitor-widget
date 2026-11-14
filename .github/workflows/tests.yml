@@ -33,6 +33,4 @@ jobs:
             qml6-module-qttest
 
       - name: Run the harness
-        run: |
-          export PATH="/usr/lib/qt6/bin:$PATH"
-          ./tests/run.sh
+        run: ./tests/run.sh
