@@ -113,10 +113,10 @@ MouseArea {
     // Invisible texts with exactly the fonts and rendering of the visible ones. Measuring with
     // these instead of with font metrics gives the real width, hinting included.
     property real widestBadge: 0
-    Text { id: probeTicker; visible: false; font.pixelSize: 9; font.weight: Font.Bold; renderType: Text.NativeRendering }
-    Text { id: probeTag; visible: false; font.pixelSize: 8; font.weight: Font.Bold; renderType: Text.NativeRendering }
-    Text { id: probePrice; visible: false; font.pixelSize: 11; renderType: Text.NativeRendering }
-    Text { id: probeBadge; visible: false; font.pixelSize: 10; renderType: Text.NativeRendering }
+    Text { id: probeTicker; visible: false; font.pixelSize: 10; font.weight: Font.Bold; renderType: Text.NativeRendering }
+    Text { id: probeTag; visible: false; font.pixelSize: 9; font.weight: Font.Bold; renderType: Text.NativeRendering }
+    Text { id: probePrice; visible: false; font.pixelSize: 12; renderType: Text.NativeRendering }
+    Text { id: probeBadge; visible: false; font.pixelSize: 11; renderType: Text.NativeRendering }
 
     function measureWidest() {
         var tickers = [], prices = [], pcts = [];
@@ -246,7 +246,7 @@ MouseArea {
                 Text {
                     text: applet.displayTicker(applet.isMultiMode ? applet.panelTicker : applet.singleTicker)
                     color: applet.panelTextColor
-                    font.pixelSize: 9
+                    font.pixelSize: 10
                     renderType: Text.NativeRendering
                     opacity: 0.6
                     Layout.alignment: Qt.AlignBottom
@@ -280,7 +280,7 @@ MouseArea {
                                 : ""))
                     color: applet.panelCurrentIsCached ? applet.warningTextColor : applet.panelTextColor
                     opacity: applet.panelCurrentIsCached ? 1.0 : 0.6
-                    font.pixelSize: 8
+                    font.pixelSize: 9
                     renderType: Text.NativeRendering
                 }
             }
@@ -317,8 +317,8 @@ MouseArea {
                     elide: Text.ElideRight
                     color: compactRoot.shownPositive ? applet.panelPositiveColor : applet.panelNegativeColor
                     font.pixelSize: applet.isVerticalPanel
-                                     ? (compactRoot.shownPrice.length > 7 ? 8 : 9)
-                                     : 11
+                                     ? (compactRoot.shownPrice.length > 7 ? 9 : 10)
+                                     : 12
                     renderType: Text.NativeRendering
                     // Ensure the price text is fully opaque; color is controlled by the line above
                     // Cached startup values are dimmed, so they never read as live.
@@ -350,7 +350,7 @@ MouseArea {
                         anchors.centerIn: parent
                         text: compactRoot.shownPercent
                         color: compactRoot.shownPositive ? applet.panelPositiveColor : applet.panelNegativeColor
-                        font.pixelSize: 10
+                        font.pixelSize: 11
                         renderType: Text.NativeRendering
                     }
                 }
