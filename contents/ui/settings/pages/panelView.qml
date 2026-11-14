@@ -21,6 +21,7 @@ Item {
     property alias cfg_autoCycleInterval: autoCycleSpin.value
     property alias cfg_fixedPanelWidth: fixedWidthSwitch.checked
     property alias cfg_panelWidth: panelWidthSpin.value
+    property alias cfg_panelBoldSymbol: boldSymbolSwitch.checked
 
     ScrollView {
         anchors.fill: parent
@@ -30,6 +31,12 @@ Item {
 
         Kirigami.FormLayout {
             width: parent.availableWidth
+
+            CheckBox {
+                id: boldSymbolSwitch
+                Kirigami.FormData.label: i18n("Symbol:")
+                text: i18n("Show the symbol in bold")
+            }
 
             CheckBox {
                 id: alternateSwitch

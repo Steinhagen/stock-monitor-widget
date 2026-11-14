@@ -690,6 +690,14 @@ msgid "Right click always opens the context menu. Wheel behaviour is unchanged."
 msgstr ""
 
 #: contents/ui/settings/pages/panelView.qml
+msgid "Symbol:"
+msgstr ""
+
+#: contents/ui/settings/pages/panelView.qml
+msgid "Show the symbol in bold"
+msgstr ""
+
+#: contents/ui/settings/pages/panelView.qml
 msgid "Price and percentage:"
 msgstr ""
 

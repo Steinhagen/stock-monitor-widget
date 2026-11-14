@@ -240,6 +240,10 @@
             <default>0</default>
             <min>0</min>
         </entry>
+        <entry name="panelBoldSymbol" type="Bool">
+            <label>Show the panel symbol in bold</label>
+            <default>true</default>
+        </entry>
         <entry name="formatPrices" type="Bool">
             <label>Format stock price with commas</label>
             <default>true</default>

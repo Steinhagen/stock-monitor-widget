@@ -694,6 +694,14 @@ msgid "Right click always opens the context menu. Wheel behaviour is unchanged."
 msgstr "Click dreapta deschide întotdeauna meniul contextual. Comportamentul rotiței rămâne neschimbat."
 
 #: contents/ui/settings/pages/panelView.qml
+msgid "Symbol:"
+msgstr "Simbol:"
+
+#: contents/ui/settings/pages/panelView.qml
+msgid "Show the symbol in bold"
+msgstr "Afișează simbolul cu caractere aldine"
+
+#: contents/ui/settings/pages/panelView.qml
 msgid "Price and percentage:"
 msgstr "Preț și procent:"
 

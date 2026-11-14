@@ -108,6 +108,7 @@ QtObject {
     readonly property string positiveColor: text("positiveColor", "#4cd964")
     readonly property string negativeColor: text("negativeColor", "#FF3B30")
     readonly property int bgOpacity: clamped("bgOpacity", 100, 0, 100)
+    readonly property bool panelBoldSymbol: flag("panelBoldSymbol", true)
 
     // Formatting
     readonly property bool formatPrices: flag("formatPrices", true)

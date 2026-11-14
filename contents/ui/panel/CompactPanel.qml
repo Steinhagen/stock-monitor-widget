@@ -113,7 +113,7 @@ MouseArea {
     // Invisible texts with exactly the fonts and rendering of the visible ones. Measuring with
     // these instead of with font metrics gives the real width, hinting included.
     property real widestBadge: 0
-    Text { id: probeTicker; visible: false; font.pixelSize: 10; font.weight: Font.Bold; renderType: Text.NativeRendering }
+    Text { id: probeTicker; visible: false; font.pixelSize: 10; font.weight: applet.panelBoldSymbol ? Font.Bold : Font.Normal; renderType: Text.NativeRendering }
     Text { id: probeTag; visible: false; font.pixelSize: 9; font.weight: Font.Bold; renderType: Text.NativeRendering }
     Text { id: probePrice; visible: false; font.pixelSize: 12; renderType: Text.NativeRendering }
     Text { id: probeBadge; visible: false; font.pixelSize: 11; renderType: Text.NativeRendering }
@@ -247,6 +247,7 @@ MouseArea {
                     text: applet.displayTicker(applet.isMultiMode ? applet.panelTicker : applet.singleTicker)
                     color: applet.panelTextColor
                     font.pixelSize: 10
+                    font.weight: applet.panelBoldSymbol ? Font.Bold : Font.Normal
                     renderType: Text.NativeRendering
                     opacity: 0.6
                     Layout.alignment: Qt.AlignBottom

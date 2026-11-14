@@ -266,6 +266,7 @@ PlasmoidItem {
     readonly property int bgOpacity: app.theme.bgOpacity
 
     property bool hideChangePercentage: app.config.hideChangePercentage
+    property bool panelBoldSymbol: app.config.panelBoldSymbol
     property bool hideTimestamps: app.config.hideTimestamps
     property bool formatPrices: app.config.formatPrices
     property bool hideDecimals: app.config.hideDecimals
