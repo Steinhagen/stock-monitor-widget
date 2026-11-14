@@ -5,15 +5,11 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
 import "domain/currencies.js" as Currency
-import "domain/chart.js" as Chart
-import "domain/candles.js" as Candles
 import "domain/portfolio.js" as Portfolio
 import "domain/exchanges.js" as Exchanges
 import "domain/symbols.js" as Symbols
 import "domain/format.js" as Format
-import "domain/sessions.js" as Sessions
 import "analyst"
-import "providers/yahoo/chart.js" as YahooChart
 import "app"
 import "state"
 import "controllers"
@@ -30,13 +26,23 @@ PlasmoidItem {
         id: quoteStore
     }
 
+    WatchlistController {
+        id: watchlist
+        applet: root
+        store: quoteStore
+        market: app.market
+        singleQuotes: singleQuote
+    }
+
     SingleQuoteController {
         id: singleQuote
         applet: root
         store: quoteStore
         market: app.market
-        stockModel: stockModel
+        stockModel: watchlist.model
     }
+
+    readonly property var stockModel: watchlist.model
 
     // --- CONFIGURATION ---
     // The compact panel indicator is always transparent over the panel. On the desktop,
@@ -1190,223 +1196,18 @@ PlasmoidItem {
 
     // The configured watchlist, cleaned and in display order.
     function configuredTickers() {
-        var tickers = root.multiTickers.split(",");
-        var list = [];
-        tickers.forEach(function(t) {
-            var clean = t.trim();
-            if (clean !== "") list.push(clean);
-        });
-        if (root.sortAlphabetically) {
-            list.sort(function(a, b) {
-                return a.localeCompare(b);
-            });
-        }
-        return list;
+        return watchlist.configuredTickers();
     }
 
     // Creates the list placeholders in display order and keeps the panel selection. Used
     // before fetching, and by the cached values at startup when a refresh is skipped
     // (weekend, or outside the configured hours), so the list is not left empty.
     function ensureStockRows(targetTickers) {
-        var defaultPanelTicker = targetTickers.length > 0 ? targetTickers[0] : "";
-        root.panelTicker = root.manualPanelTickerOverride !== "" && targetTickers.indexOf(root.manualPanelTickerOverride) !== -1 ? root.manualPanelTickerOverride : defaultPanelTicker;
-        root.singleTicker = root.panelTicker;
-
-        if (stockModel.count === targetTickers.length) return;
-        stockModel.clear();
-        targetTickers.forEach(function(cleanSymbol) {
-            stockModel.append({
-                "ticker": cleanSymbol,
-                "name": root.loadingText,
-                "price": "---",
-                "change": "",
-                "pct": "",
-                "isPos": true,
-                "chartPoints": "[]",
-                "chartTimes": "[]",
-                // ListModel does not create a role from a null value; use an empty
-                // object as the placeholder and treat it as "no sessions" on read.
-                "chartSessions": ({}),
-                "chartCandles": "[]",
-                "chartRef": 0.0,
-                "chartPre": false,
-                "chartSessionStart": 0.0,
-                "chartSessionCurrent": true,
-                "quoteTime": 0.0,
-                "prevClose": 0.0,
-                "currentRaw": 0.0,
-                "currencySym": "",
-                "currency": "",
-                "exchange": Exchanges.shortLabel(cleanSymbol, "", ""),
-                "exchangeFull": "",
-                "cached": false
-            });
-        });
+        watchlist.ensureRows(targetTickers);
     }
 
     function fetchMultiStocks() {
-        var range = root.chartRange;
-        var targetTickers = root.configuredTickers();
-        root.ensureStockRows(targetTickers);
-
-        // Show the previous values (marked as cached) while the replies are in flight.
-        root.applyCachedQuotesToRows();
-
-        targetTickers.forEach(function(cleanSymbol) {
-            YahooChart.get(cleanSymbol, range, root.showExtendedHours, function(response, error) {
-                if (error) { root.scheduleQuoteRetry(); return; }
-                // Ignore a reply for a range the user has already switched away from.
-                if (range !== root.chartRange) return;
-                processListRow(cleanSymbol, response, range);
-            });
-        });
-    }
-
-    // The candles that make up the chart, with null entries dropped. The timestamps are
-    // kept in a parallel array so the time scale can position its labels on the exact
-    // data points; both arrays must stay the same length. For 1D the request asks for two
-    // days (so the previous close is available) but only the current session is plotted.
-    // When `quote` is supplied, the open/high/low/volume series are filtered in lockstep
-    // with the closes, so the candlestick chart can aggregate them without re-fetching.
-    // Trading days described by meta.tradingPeriods (oldest to newest) as
-    // { pre, regular, post }, each a { start, end } or null. Zero-length periods count as absent.
-    // Chart response parsing lives in domain/chart.js; these wrappers keep the existing
-    // root API used by the quote workflow and the views.
-    function tradingDays(meta) { return Chart.tradingDays(meta); }
-    function displayedDay(meta, timestamps) { return Chart.displayedDay(meta, timestamps); }
-    function chartDayFor(meta, timestamps, quotes) { return Chart.chartDayFor(meta, timestamps, quotes); }
-    function isPreSessionDay(meta, day) { return Chart.isPreSessionDay(meta, day); }
-    function extendedSessionSeries(quotes, timestamps, day) {
-        return Chart.extendedSessionSeries(quotes, timestamps, day);
-    }
-    function cleanChartData(quotes, timestamps, startTime, range, quote, day) {
-        return Chart.cleanChartData(quotes, timestamps, startTime,
-                                        range || root.effectiveChartRange, quote, day);
-    }
-    function seedFirstSessionPoint(chart, dayStart, meta) {
-        return Chart.seedFirstSessionPoint(chart, dayStart, meta);
-    }
-    function candleTarget(range) { return Candles.candleTarget(range); }
-    function dailyPreviousClose(meta, fallback) { return Chart.dailyPreviousClose(meta, fallback); }
-    function buildCandles(chart, range, asked) { return Candles.buildCandles(chart, range, asked); }
-    function sessionCandles(quote, timestamps, period, day, zone) {
-        return Candles.sessionCandles(quote, timestamps, period, day, zone);
-    }
-    function chartCandlesFor(chart, range, quote, timestamps, day) {
-        return Candles.chartCandlesFor(chart, range, quote, timestamps, day);
-    }
-    function inExtendedSession(period, time, kind) {
-        return Chart.inExtendedSession(period, time, kind);
-    }
-    function processListRow(symbol, json, range) {
-        var listRange = range || root.chartRange;
-        // When both views use the same range, the chart can reuse this response. With a
-        // chart-only range, the chart is refreshed by its own request instead.
-        if (root.isMultiMode && symbol === root.panelTicker && listRange === root.effectiveChartRange) {
-            singleQuote.process(json, symbol, listRange);
-        }
-        try {
-            var result = json.chart.result[0];
-            var meta = result.meta;
-            root.setMarketSession(symbol, meta);
-            var quote = result.indicators.quote[0] || {};
-            var quotes = quote.close || [];
-            var timestamps = result.timestamp;
-
-            var current = meta.regularMarketPrice;
-            var curSym = getCurrencySymbol(meta.currency);
-
-            var startTime = (meta.currentTradingPeriod && meta.currentTradingPeriod.regular) ? meta.currentTradingPeriod.regular.start : 0;
-            var chartDay = listRange === "1D" ? root.chartDayFor(meta, timestamps, quotes) : null;
-            var preChart = listRange === "1D" && root.isPreSessionDay(meta, chartDay);
-            var listDay = (listRange === "1D" && root.showExtendedHours) ? chartDay : null;
-            var cleanChart = root.cleanChartData(quotes, timestamps, startTime, listRange, quote, listDay);
-            if (listRange === "1D")
-                root.seedFirstSessionPoint(cleanChart, (listDay && listDay.regular) ? listDay.regular.start : startTime, meta);
-            var cleanData = cleanChart.values;
-            var prev;
-            if (listRange === "1D") {
-                prev = meta.regularMarketPreviousClose || meta.previousClose || meta.chartPreviousClose;
-            } else {
-                prev = meta.chartPreviousClose;
-                if (!prev || prev === 0) {
-                    prev = cleanData.length > 0 ? cleanData[0] : meta.regularMarketPreviousClose;
-                }
-            }
-            
-            var change = current - prev;
-            var pct = prev > 0 ? (change / prev) * 100 : 0;
-
-            // Keep the chart state of the list range with the row, so selecting it can
-            // show its graph immediately instead of waiting for another request.
-            var chartSessions = (listDay && cleanData.length >= 2)
-                                ? root.extendedSessionSeries(quotes, timestamps, listDay) : null;
-            var chartCandles = root.chartCandlesFor(cleanChart, listRange, quote, timestamps, listDay);
-            var chartRef = preChart ? (meta.regularMarketPrice || 0) : 0;
-            if (!(chartRef > 0))
-                chartRef = root.dailyPreviousClose(meta, cleanData.length > 0 ? cleanData[0] : 0);
-            // The session label shown above the chart travels with the cached chart, so a
-            // selection that reuses it does not keep the previous ticker's label.
-            var sessionStart = (chartDay && chartDay.regular) ? chartDay.regular.start : 0;
-            var sessionCurrent = !(sessionStart > 0)
-                || !(meta.currentTradingPeriod)
-                || (meta.currentTradingPeriod.regular && sessionStart === meta.currentTradingPeriod.regular.start)
-                || (meta.currentTradingPeriod.pre && sessionStart === meta.currentTradingPeriod.pre.start);
-
-            var exchange = Exchanges.shortLabel(symbol, meta.exchangeName, meta.fullExchangeName);
-            var exchangeFull = Exchanges.fullLabel(symbol, meta.exchangeName, meta.fullExchangeName);
-            var itemData = {
-                "ticker": symbol,
-                "name": root.companyName(meta, symbol),
-                "price": curSym + formatNumber(current, false),
-                "change": formatNumber(change, true),
-                "pct": formatNumber(pct, true) + "%",
-                "isPos": change >= 0,
-                "chartPoints": JSON.stringify(cleanData),
-                "chartTimes": JSON.stringify(cleanChart.times),
-                "chartSessions": chartSessions,
-                "chartCandles": JSON.stringify(chartCandles),
-                "chartRef": chartRef,
-                "chartPre": preChart,
-                "chartSessionStart": sessionStart,
-                "chartSessionCurrent": sessionCurrent,
-                "quoteTime": meta.regularMarketTime || 0,
-                "prevClose": prev,
-                "currentRaw": current,
-                "currencySym": curSym,
-                "currency": meta.currency || "",
-                "exchange": exchange,
-                "exchangeFull": exchangeFull,
-                "cached": false
-            };
-
-            if (root.isMultiMode && symbol === root.panelTicker) {
-                root.panelCurrentPrice = itemData.price;
-                root.panelCurrentPercent = itemData.pct;
-                root.panelCurrentIsPositive = itemData.isPos;
-                root.panelCurrentIsCached = false;
-                root.singleExchange = itemData.exchange;
-                root.singleExchangeFull = itemData.exchangeFull;
-            }
-
-            var found = false;
-            for(var k=0; k<stockModel.count; k++) {
-                if(stockModel.get(k).ticker === symbol) {
-                    stockModel.set(k, itemData);
-                    found = true;
-                    break;
-                }
-            }
-            if(!found) stockModel.append(itemData);
-
-            var now = new Date();
-            root.lastUpdated = now.toLocaleTimeString(Qt.locale(), "HH:mm");
-            var next = new Date(now.getTime() + (app.config.refreshInterval * 60000));
-            root.nextUpdate = next.toLocaleTimeString(Qt.locale(), "HH:mm");
-            root.noteQuoteReceived();
-            root.queueQuotesCacheSave();
-
-        } catch (e) { console.log("Error parsing multi: " + e); }
+        watchlist.fetch();
     }
 
     function formatNumber(amount, isChange) {
@@ -1550,8 +1351,6 @@ PlasmoidItem {
         applet: root
         stockList: stockModel
     }
-
-    ListModel { id: stockModel }
 
     // Whether a list row still shows its restored value. Reading tooltipRevision makes
     // bindings that call this re-evaluate whenever a row changes.

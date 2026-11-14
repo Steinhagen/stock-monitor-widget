@@ -47,6 +47,7 @@ tests/
 | `tst_fxcontroller.qml` | rate cache, conversion and persistence |
 | `tst_marketcontroller.qml` | session status and extended-quote selection |
 | `tst_singlequote.qml` | chart reply to QuoteStore values (fixture) |
+| `tst_watchlist.qml` | ticker list, row creation and row processing (fixture) |
 
 Tests are offline: the provider parsers are fed fixture bodies, the request URLs are
 checked directly, and `NewsController` is exercised with a fake applet and the
