@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "../components"
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 
@@ -9,6 +10,7 @@ ColumnLayout {
     id: quote
     property var applet
     property var host
+    property bool dimmed: false
     Layout.fillWidth: true
     spacing: 0
 
@@ -48,26 +50,23 @@ ColumnLayout {
                         font.letterSpacing: 0.5
                     }
 
-                    Text {
+                    PriceText {
                         id: priceText
+                        applet: quote.applet
+                        dimmed: quote.dimmed
                         text: host.waitingForFirstQuote ? "—" : applet.currentPrice
-                        color: applet.priceColor
-                        opacity: applet.priceOpacity / 100.0
                         font.pixelSize: 25
                         Layout.fillWidth: true
                         elide: Text.ElideRight
-
-                        Behavior on opacity { NumberAnimation { duration: 150 } }
                     }
 
-                    Text {
-                        text: host.waitingForFirstQuote ? ""
-                              : (applet.priceChange !== ""
-                                 ? applet.priceChange + " (" + applet.percentChange + ")" : "")
-                        color: applet.isPositive ? applet.positiveColor : applet.negativeColor
+                    ChangeText {
+                        applet: quote.applet
+                        positive: applet.isPositive
+                        amount: host.waitingForFirstQuote ? "" : applet.priceChange
+                        percent: applet.percentChange
                         font.pixelSize: 10
                         font.bold: true
-                        elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
                 }
@@ -99,10 +98,10 @@ ColumnLayout {
                         Layout.fillWidth: true
                     }
 
-                    Text {
+                    PriceText {
+                        applet: quote.applet
+                        dimmed: quote.dimmed
                         text: host.hasExtendedQuote ? host.extendedQuote.price : ""
-                        color: applet.priceColor
-                        opacity: applet.priceOpacity / 100.0
                         font.pixelSize: 18
                         font.bold: true
                         elide: Text.ElideRight
@@ -147,23 +146,21 @@ ColumnLayout {
                     Layout.alignment: Qt.AlignVCenter
                 }
 
-                Text {
+                PriceText {
                     id: priceTextCompact
+                    applet: quote.applet
+                    dimmed: quote.dimmed
                     text: host.waitingForFirstQuote ? "—" : applet.currentPrice
-                    color: applet.priceColor
-                    opacity: applet.priceOpacity / 100.0
                     font.pixelSize: 25
                     Layout.alignment: Qt.AlignVCenter
                     Layout.minimumWidth: implicitWidth
-
-                    Behavior on opacity { NumberAnimation { duration: 150 } }
                 }
 
-                Text {
-                    text: host.waitingForFirstQuote ? ""
-                          : (applet.priceChange !== ""
-                             ? applet.priceChange + " (" + applet.percentChange + ")" : "")
-                    color: applet.isPositive ? applet.positiveColor : applet.negativeColor
+                ChangeText {
+                    applet: quote.applet
+                    positive: applet.isPositive
+                    amount: host.waitingForFirstQuote ? "" : applet.priceChange
+                    percent: applet.percentChange
                     font.pixelSize: 10
                     font.bold: true
                     Layout.alignment: Qt.AlignVCenter
@@ -181,17 +178,8 @@ ColumnLayout {
                     Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                 }
             }
-    }
 
     // Briefly dim the price when a middle-click refresh starts.
-    function flicker() {
-        if (priceText) priceText.opacity = 0.3;
-        if (priceTextCompact) priceTextCompact.opacity = 0.3;
-    }
-    function restorePriceOpacity() {
-        if (priceText)
-            priceText.opacity = Qt.binding(function() { return applet.priceOpacity / 100.0; });
-        if (priceTextCompact)
-            priceTextCompact.opacity = Qt.binding(function() { return applet.priceOpacity / 100.0; });
-    }
+    function flicker() { dimmed = true; }
+    function restorePriceOpacity() { dimmed = false; }
 }

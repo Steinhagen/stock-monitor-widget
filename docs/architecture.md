@@ -311,9 +311,9 @@ update the fixture and the parser test together.
       `ui/single/ChartCanvas.qml`, the header to `ui/single/StockHeader.qml`, the quote
       rows to `ui/single/QuoteBlock.qml` and the controls above the chart to
       `ui/single/ChartControls.qml`. The shared components in `ui/components/` now back
-      the range, style and news-source buttons (`PillButton`) and the tooltip icon
-      buttons (`IconAction`). Next: the remaining shared components and the `rootItem.*`
-      reach-through in the other views.
+      the range, style and news-source buttons (`PillButton`), the tooltip icon buttons
+      (`IconAction`) and the quote price/change labels (`PriceText`, `ChangeText`). Next:
+      the remaining `rootItem.*` reach-through in the other views.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the
       portfolio page, move backup into `settings/importExport/`.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
