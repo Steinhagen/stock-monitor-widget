@@ -91,6 +91,22 @@ TestCase {
         verify(Qt.colorEqual(theme.systemTextColor, "#000000"));
     }
 
+    function test_panelFallbackLight() {
+        fakeConfig.themeColors = 0;
+        // The panel host reports black on black but the surface is light.
+        var theme = make("#000000", fakeConfig, "#000000", "#000000");
+        verify(Qt.colorEqual(theme.panelTextColor, "#000000"));
+        verify(theme.panelBackground.hslLightness > 0.9);
+    }
+
+    function test_panelFallbackDark() {
+        fakeConfig.themeColors = 1;
+        var theme = make("#000000", fakeConfig, "#000000", "#000000");
+        verify(Qt.colorEqual(theme.panelTextColor, "#ffffff"));
+        verify(theme.panelBackground.hslLightness < 0.2);
+        fakeConfig.themeColors = 0;
+    }
+
     function test_secondaryOnPlasma() {
         fakeConfig.themePreset = 1;
         var theme = make("#eff0f1", fakeConfig, "#31363b", "#9931363b");

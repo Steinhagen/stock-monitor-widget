@@ -55,9 +55,17 @@ QtObject {
 
     // The panel indicator always uses the panel's own palette, independent of the
     // widget theme.
-    readonly property color panelTextColor: readableText(hostTextColor, systemBackgroundColor)
-    readonly property color panelPositiveColor: withContrast(config ? config.positiveColor : "#4cd964", systemBackgroundColor)
-    readonly property color panelNegativeColor: withContrast(config ? config.negativeColor : "#FF3B30", systemBackgroundColor)
+    // The panel host can report a broken palette (black on black when no Kirigami
+    // theme is inherited); then trust the configured Light/Dark choice instead.
+    readonly property bool panelPaletteValid: contrastRatio(hostTextColor, systemBackgroundColor) >= 2
+    readonly property bool panelLightFallback: themeColors === 0 ? true : (themeColors === 1 ? false : true)
+    readonly property color panelBackground: panelPaletteValid ? systemBackgroundColor
+                                              : (panelLightFallback ? "#ffffff" : "#1a1a1a")
+    readonly property color panelTextColor: panelPaletteValid
+                                            ? readableText(hostTextColor, panelBackground)
+                                            : (panelLightFallback ? "#000000" : "#ffffff")
+    readonly property color panelPositiveColor: withContrast(config ? config.positiveColor : "#4cd964", panelBackground)
+    readonly property color panelNegativeColor: withContrast(config ? config.negativeColor : "#FF3B30", panelBackground)
 
     // Colour the gain/loss text is measured against: the cards' base colour, otherwise
     // the Plasma surface. The configured gain/loss colours are adjusted only as far as
