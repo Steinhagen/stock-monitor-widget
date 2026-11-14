@@ -532,9 +532,12 @@ import "../domain/curve.js" as ChartCurve
         ctx.beginPath();
         ctx.rect(0, 0, plotRight, refY);
         ctx.clip();
+        // A thinner line and a lighter area fill keep the chart from looking heavy in
+        // both themes (the light theme uses darker accents for contrast).
+        var fillScale = 0.65;
         var above = ctx.createLinearGradient(0, 0, 0, Math.max(1, refY));
-        above.addColorStop(0.0, Qt.rgba(pos.r, pos.g, pos.b, 0.30));
-        above.addColorStop(0.55, Qt.rgba(pos.r, pos.g, pos.b, 0.10));
+        above.addColorStop(0.0, Qt.rgba(pos.r, pos.g, pos.b, 0.30 * fillScale));
+        above.addColorStop(0.55, Qt.rgba(pos.r, pos.g, pos.b, 0.10 * fillScale));
         above.addColorStop(1.0, Qt.rgba(pos.r, pos.g, pos.b, 0.012));
         traceSmooth(ctx, data, plotRight, getY, xsReg, times);
         ctx.lineTo(xLast, refY);
@@ -551,8 +554,8 @@ import "../domain/curve.js" as ChartCurve
         ctx.clip();
         var below = ctx.createLinearGradient(0, refY, 0, plotH);
         below.addColorStop(0.0, Qt.rgba(neg.r, neg.g, neg.b, 0.012));
-        below.addColorStop(0.5, Qt.rgba(neg.r, neg.g, neg.b, 0.11));
-        below.addColorStop(1.0, Qt.rgba(neg.r, neg.g, neg.b, 0.30));
+        below.addColorStop(0.5, Qt.rgba(neg.r, neg.g, neg.b, 0.11 * fillScale));
+        below.addColorStop(1.0, Qt.rgba(neg.r, neg.g, neg.b, 0.30 * fillScale));
         traceSmooth(ctx, data, plotRight, getY, xsReg, times);
         ctx.lineTo(xLast, refY);
         ctx.lineTo(xFirst, refY);
@@ -608,7 +611,7 @@ import "../domain/curve.js" as ChartCurve
             ctx.rect(0, 0, plotRight, refY);
             ctx.clip();
             ctx.strokeStyle = pos;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1.5;
             traceSmooth(ctx, values, plotRight, getY, xs, ts);
             ctx.stroke();
             ctx.restore();
@@ -618,7 +621,7 @@ import "../domain/curve.js" as ChartCurve
             ctx.rect(0, refY, plotRight, Math.max(1, plotH - refY));
             ctx.clip();
             ctx.strokeStyle = neg;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1.5;
             traceSmooth(ctx, values, plotRight, getY, xs, ts);
             ctx.stroke();
             ctx.restore();
