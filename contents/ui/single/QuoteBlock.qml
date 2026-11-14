@@ -66,7 +66,6 @@ ColumnLayout {
                         amount: host.waitingForFirstQuote ? "" : applet.priceChange
                         percent: applet.percentChange
                         font.pixelSize: 10
-                        font.bold: true
                         Layout.fillWidth: true
                     }
                 }
@@ -162,7 +161,6 @@ ColumnLayout {
                     amount: host.waitingForFirstQuote ? "" : applet.priceChange
                     percent: applet.percentChange
                     font.pixelSize: 10
-                    font.bold: true
                     Layout.alignment: Qt.AlignVCenter
                     Layout.minimumWidth: implicitWidth
                 }

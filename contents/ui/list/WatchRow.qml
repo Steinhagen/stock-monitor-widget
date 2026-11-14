@@ -283,7 +283,7 @@ Item {
                             if (pick[0] !== null) out += '<font color="' + rowRoot.applet.secondaryTextColor + '">' + pick[0] + '</font>' + gap;
                             // With no change shown, colour the price itself so the direction is still visible.
                             out += '<font color="' + (pick[2] === null ? accent : rowRoot.applet.priceColor) + '"><b>' + pick[1] + '</b></font>';
-                            if (pick[2] !== null) out += gap + '<font color="' + accent + '"><b>' + pick[2] + '</b></font>';
+                            if (pick[2] !== null) out += gap + '<font color="' + accent + '">' + pick[2] + '</font>';
                             return out;
                         }
 

@@ -73,8 +73,8 @@ QtObject {
     readonly property color contrastBackground: usesPlasmaSurface
         ? surfaceBackground
         : (appLightPalette ? "#ffffff" : "#1a1a1a")
-    readonly property color positiveColor: withContrast(config ? config.positiveColor : "#4cd964", contrastBackground)
-    readonly property color negativeColor: withContrast(config ? config.negativeColor : "#FF3B30", contrastBackground)
+    readonly property color positiveColor: withContrast(config ? config.positiveColor : "#4cd964", contrastBackground, 5.0)
+    readonly property color negativeColor: withContrast(config ? config.negativeColor : "#FF3B30", contrastBackground, 5.0)
 
     readonly property color tickerColor: getThemeColor("ticker")
     readonly property color priceColor: getThemeColor("price")
@@ -116,10 +116,11 @@ QtObject {
 
     // Returns the colour unchanged when it already reads well on bg. Otherwise keeps the
     // hue and saturation and moves only the lightness until the contrast is enough.
-    function withContrast(color, bg) {
+    function withContrast(color, bg, minimum) {
+        var target = minimum || 4.5;
         var c = Qt.color(color);
         var b = Qt.color(bg);
-        if (contrastRatio(c, b) >= 4.5) return c;
+        if (contrastRatio(c, b) >= target) return c;
         var darken = luminance(b) > 0.18;
         var hue = c.hslHue < 0 ? 0 : c.hslHue;
         var l = c.hslLightness;
@@ -128,7 +129,7 @@ QtObject {
             l += darken ? -0.01 : 0.01;
             if (l < 0 || l > 1) break;
             out = Qt.hsla(hue, c.hslSaturation, l, 1);
-            if (contrastRatio(out, b) >= 4.5) break;
+            if (contrastRatio(out, b) >= target) break;
         }
         return out;
     }

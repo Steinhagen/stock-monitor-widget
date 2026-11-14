@@ -114,7 +114,6 @@ Item {
                 text: line.summary ? applet.formatMoney(line.moneySymbol, line.summary.value, false) : ""
                 color: applet.priceColor
                 font.pixelSize: line.fontSize
-                font.bold: true
             }
         }
 
@@ -172,7 +171,6 @@ Item {
                 text: line.dayAvailable ? applet.formatMoney(line.moneySymbol, line.summary.dayValue, true) : ""
                 color: line.dayColor
                 font.pixelSize: line.fontSize
-                font.bold: true
             }
         }
     }
