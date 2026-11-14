@@ -50,6 +50,17 @@ Item {
         return htmlColored(isPos, change + " (" + pct + ")");
     }
 
+    // The market status as a short, translatable label for its own column.
+    function statusText(ticker) {
+        if (applet.isMarketClosedFor(ticker))
+            return i18nc("@item:market status", "Closed");
+        var status = applet.marketStatusFor(ticker);
+        if (status === "open") return i18nc("@item:market status", "Open");
+        if (status === "pre") return i18nc("@item:market status", "Pre");
+        if (status === "post") return i18nc("@item:market status", "After");
+        return "";
+    }
+
     // The slice of the stock list the tooltip shows: at most `maxRows` consecutive rows,
     // always including the selected one (the row with the marker) and centred on it when
     // there is room. Returns a half-open [start, end) range.
@@ -86,7 +97,7 @@ Item {
             }
             var visible = tooltipWindow(stockList.count, activeRow, maxRows);
             var moreRow = function(hidden, atTop) {
-                return "<tr><td></td><td colspan=\"3\" style=\""
+                return "<tr><td></td><td colspan=\"4\" style=\""
                        + (atTop ? "padding-bottom:2px;" : "padding-top:2px;") + "\">"
                        + muted(i18n("… and %1 more", hidden)) + "</td></tr>";
             };
@@ -98,19 +109,19 @@ Item {
                 var ext = applet.extendedQuote(row.ticker);
                 var marker = "<td style=\"padding-right:6px; padding-top:1px; padding-bottom:1px;\">"
                              + (row.ticker === applet.panelTicker ? "•" : "") + "</td>";
-                var closedMark = (applet.showExtendedHours && applet.isMarketClosedFor(row.ticker))
-                                 ? " " + muted(i18nc("@item:market status", "closed")) : "";
                 var badge = applet.exchangeBadge(row.ticker, row.exchange);
                 var tickerCell = "<td style=\"" + tickerStyle + "\"><b>"
                                  + htmlEscape(applet.displayTicker(row.ticker)) + "</b>"
-                                 + (badge !== "" ? " " + muted(badge) : "") + closedMark + "</td>";
+                                 + (badge !== "" ? " " + muted(badge) : "") + "</td>";
+                var statusCell = "<td style=\"" + tickerStyle + "\">"
+                                 + muted(statusText(row.ticker)) + "</td>";
                 if (row.price === "---" && !ext) {
                     rows.push("<tr>" + marker + tickerCell
-                              + "<td colspan=\"2\" align=\"right\" style=\"padding-top:1px; padding-bottom:1px;\">"
+                              + "<td colspan=\"3\" align=\"right\" style=\"padding-top:1px; padding-bottom:1px;\">"
                               + muted(i18n("loading…")) + "</td></tr>");
                     continue;
                 }
-                rows.push("<tr>" + marker + tickerCell
+                rows.push("<tr>" + marker + tickerCell + statusCell
                           + "<td align=\"right\" style=\"" + tickerStyle + "\">"
                           + htmlEscape(ext ? ext.price : row.price) + "</td>"
                           + "<td align=\"right\" style=\"padding-top:1px; padding-bottom:1px;\">"

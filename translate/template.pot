@@ -146,7 +146,7 @@ msgstr ""
 msgid "Refresh"
 msgstr ""
 
-#: contents/ui/list/WatchRow.qml contents/ui/tooltip/TooltipContent.qml
+#: contents/ui/list/WatchRow.qml
 msgctxt "@item:market status"
 msgid "closed"
 msgstr ""
@@ -1309,6 +1309,26 @@ msgstr ""
 #: contents/ui/tooltip/TooltipContent.qml
 msgctxt "@info:tooltip"
 msgid "%1 · %2"
+msgstr ""
+
+#: contents/ui/tooltip/TooltipContent.qml
+msgctxt "@item:market status"
+msgid "Closed"
+msgstr ""
+
+#: contents/ui/tooltip/TooltipContent.qml
+msgctxt "@item:market status"
+msgid "Open"
+msgstr ""
+
+#: contents/ui/tooltip/TooltipContent.qml
+msgctxt "@item:market status"
+msgid "Pre"
+msgstr ""
+
+#: contents/ui/tooltip/TooltipContent.qml
+msgctxt "@item:market status"
+msgid "After"
 msgstr ""
 
 #: contents/ui/tooltip/TooltipContent.qml
