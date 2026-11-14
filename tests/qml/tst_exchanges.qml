@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import "../../contents/ui/exchanges.js" as Exchanges
+import "../../contents/ui/domain/exchanges.js" as Exchanges
 
 TestCase {
     name: "Exchanges"

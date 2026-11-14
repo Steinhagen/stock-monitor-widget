@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import "../../contents/ui/currencies.js" as Currency
+import "../../contents/ui/domain/currencies.js" as Currency
 
 TestCase {
     name: "Currency"

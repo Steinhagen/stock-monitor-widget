@@ -4,10 +4,16 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.plasmoid
-import "currencies.js" as Currency
-import "chartdata.js" as ChartData
-import "portfolio.js" as Portfolio
-import "exchanges.js" as Exchanges
+import "domain/currencies.js" as Currency
+import "domain/chart.js" as Chart
+import "domain/candles.js" as Candles
+import "domain/portfolio.js" as Portfolio
+import "domain/exchanges.js" as Exchanges
+import "domain/symbols.js" as Symbols
+import "domain/format.js" as Format
+import "domain/sessions.js" as Sessions
+import "domain/quotes.js" as Quotes
+import "domain/news.js" as NewsModel
 import "analyst"
 import "news.js" as News
 import "bvbnews.js" as BvbNews
@@ -78,35 +84,27 @@ PlasmoidItem {
     // "DEUTSCHE LUFTHANSA AG         V". That padding is not part of the name, so use the
     // long name for those quotes and collapse any whitespace that is left over.
     function companyName(meta, fallback) {
-        var shortName = meta.shortName ? String(meta.shortName).trim() : "";
-        var longName = meta.longName ? String(meta.longName).trim() : "";
-        var name = /\s{2,}/.test(shortName) && longName !== "" ? longName : (shortName || longName);
-        return name.replace(/\s+/g, " ").trim() || fallback;
+        return Symbols.companyName(meta, fallback);
     }
 
     // What the widget shows for a ticker. The stored symbol always stays the full Yahoo
     // one: it is the key for quote requests, portfolio lots and the selected row.
     function displayTicker(ticker) {
-        var clean = Exchanges.upper(ticker);
-        return root.symbolDisplayMode === 0 ? clean : Exchanges.baseSymbol(clean);
+        return Symbols.displayTicker(ticker, root.symbolDisplayMode);
     }
 
     // Short exchange label for the badge, or "" when badges are off, the symbol has no
     // exchange suffix, or no exchange is known. A plain US ticker has no suffix to
     // replace, so it does not need a badge.
     function exchangeBadge(ticker, exchange) {
-        if (root.symbolDisplayMode !== 2 || !Exchanges.hasSuffix(ticker)) return "";
-        var label = String(exchange === undefined || exchange === null ? "" : exchange).trim();
-        return label !== "" ? label : Exchanges.shortLabel(ticker, "", "");
+        return Symbols.exchangeBadge(ticker, exchange, root.symbolDisplayMode);
     }
 
     // Name and ticker together: "Company Name (TICK)", or "TICK (Company Name)" when
     // "swap names" is on. Falls back to just the ticker while the name is not known yet
     // or when Yahoo only returned the ticker as the name.
     function nameAndTicker(name, ticker) {
-        var t = (ticker || "").trim().toUpperCase();
-        if (!name || name === root.loadingText || name.trim().toUpperCase() === t) return t;
-        return root.swapNameAndTicker ? t + " (" + name + ")" : name + " (" + t + ")";
+        return Symbols.nameAndTicker(name, ticker, root.swapNameAndTicker, root.loadingText);
     }
 
     // Same text, but when it does not fit in `avail` pixels only the company name is shortened
@@ -430,9 +428,7 @@ PlasmoidItem {
     }
 
     function getCurrencySymbol(code) {
-        // Yahoo occasionally reports the literal text "null" for a missing currency.
-        if (!code || code === "null") return "";
-        return Currency.symbol(code);
+        return Format.currencySymbol(code);
     }
 
     // --- EXCHANGE RATES ---
@@ -662,8 +658,7 @@ PlasmoidItem {
 
     // "-$1,234.50", or "+$1,234.50" when `signed` and the amount is positive.
     function formatMoney(sym, v, signed) {
-        var sign = v < 0 ? "-" : (signed && v > 0 ? "+" : "");
-        return sign + sym + root.formatNumber(Math.abs(v), false);
+        return Format.money(sym, v, signed, root.hideDecimals, root.formatPrices);
     }
 
     function getPortfolioTickers(dataStr) {
@@ -869,19 +864,7 @@ PlasmoidItem {
 
     // --- NEW HELPER: GET API PARAMETERS BASED ON CONFIG ---
     function getApiParams(range) {
-        // Yahoo Finance requires specific intervals for specific ranges
-        // to return valid data and look good.
-        switch (range) {
-            case "1D":  return "range=2d&interval=2m" + (root.showExtendedHours ? "&includePrePost=true" : ""); // Use 2d to get reliable previous close for indices
-            case "5D":  return "range=5d&interval=15m";
-            case "1M":  return "range=1mo&interval=60m"; // '1mo' is Yahoo syntax
-            case "6M":  return "range=6mo&interval=1d";
-            case "YTD": return "range=ytd&interval=1d";
-            case "1Y":  return "range=1y&interval=1d";
-            case "5Y":  return "range=5y&interval=1wk";
-            case "Max": return "range=max&interval=1mo";
-            default:    return "range=1d&interval=2m";
-        }
+        return Quotes.apiParams(range, root.showExtendedHours);
     }
 
     // --- PRE-MARKET / AFTER-MARKET ---
@@ -950,12 +933,7 @@ PlasmoidItem {
         if (!s) return "";
         // Read the clock so QML re-evaluates callers when a session boundary passes.
         if (root.marketClock < 0) return "";
-        var now = Math.floor(Date.now() / 1000);
-        if (s.crypto) return "open";
-        if (s.regular && now >= s.regular.start && now < s.regular.end) return "open";
-        if (s.pre && now >= s.pre.start && now < s.pre.end) return "pre";
-        if (s.post && now >= s.post.start && now < s.post.end) return "post";
-        return "closed";
+        return Sessions.status(s, Math.floor(Date.now() / 1000));
     }
 
     function hasPrePostDataFor(symbol) {
@@ -969,9 +947,7 @@ PlasmoidItem {
     function isMarketClosedFor(symbol) {
         var s = root.marketSessions[symbol];
         if (!s) return false;
-        var status = root.marketStatusFor(symbol);
-        if (status === "closed") return true;
-        return !s.hasPrePost && (status === "pre" || status === "post");
+        return Sessions.isClosed(s, root.marketStatusFor(symbol));
     }
 
     // True while the regular session has started but its first quote has not arrived.
@@ -982,9 +958,7 @@ PlasmoidItem {
         if (!s || !s.regular) return false;
         // Read the clock so the waiting state re-evaluates at the session boundary.
         if (root.marketClock < 0) return false;
-        var now = Math.floor(Date.now() / 1000);
-        if (now < s.regular.start || now >= s.regular.end) return false;
-        return !(s.quoteTime > 0) || s.quoteTime < s.regular.start;
+        return Sessions.awaitingFirstRegularQuote(s, Math.floor(Date.now() / 1000));
     }
 
     // True when a quote or candle at `time` belongs to the extended session `period`.
@@ -1642,33 +1616,33 @@ PlasmoidItem {
     // with the closes, so the candlestick chart can aggregate them without re-fetching.
     // Trading days described by meta.tradingPeriods (oldest to newest) as
     // { pre, regular, post }, each a { start, end } or null. Zero-length periods count as absent.
-    // Chart response parsing lives in chartdata.js; these wrappers keep the existing
+    // Chart response parsing lives in domain/chart.js; these wrappers keep the existing
     // root API used by the quote workflow and the views.
-    function tradingDays(meta) { return ChartData.tradingDays(meta); }
-    function displayedDay(meta, timestamps) { return ChartData.displayedDay(meta, timestamps); }
-    function chartDayFor(meta, timestamps, quotes) { return ChartData.chartDayFor(meta, timestamps, quotes); }
-    function isPreSessionDay(meta, day) { return ChartData.isPreSessionDay(meta, day); }
+    function tradingDays(meta) { return Chart.tradingDays(meta); }
+    function displayedDay(meta, timestamps) { return Chart.displayedDay(meta, timestamps); }
+    function chartDayFor(meta, timestamps, quotes) { return Chart.chartDayFor(meta, timestamps, quotes); }
+    function isPreSessionDay(meta, day) { return Chart.isPreSessionDay(meta, day); }
     function extendedSessionSeries(quotes, timestamps, day) {
-        return ChartData.extendedSessionSeries(quotes, timestamps, day);
+        return Chart.extendedSessionSeries(quotes, timestamps, day);
     }
     function cleanChartData(quotes, timestamps, startTime, range, quote, day) {
-        return ChartData.cleanChartData(quotes, timestamps, startTime,
+        return Chart.cleanChartData(quotes, timestamps, startTime,
                                         range || root.effectiveChartRange, quote, day);
     }
     function seedFirstSessionPoint(chart, dayStart, meta) {
-        return ChartData.seedFirstSessionPoint(chart, dayStart, meta);
+        return Chart.seedFirstSessionPoint(chart, dayStart, meta);
     }
-    function candleTarget(range) { return ChartData.candleTarget(range); }
-    function dailyPreviousClose(meta, fallback) { return ChartData.dailyPreviousClose(meta, fallback); }
-    function buildCandles(chart, range, asked) { return ChartData.buildCandles(chart, range, asked); }
+    function candleTarget(range) { return Candles.candleTarget(range); }
+    function dailyPreviousClose(meta, fallback) { return Chart.dailyPreviousClose(meta, fallback); }
+    function buildCandles(chart, range, asked) { return Candles.buildCandles(chart, range, asked); }
     function sessionCandles(quote, timestamps, period, day, zone) {
-        return ChartData.sessionCandles(quote, timestamps, period, day, zone);
+        return Candles.sessionCandles(quote, timestamps, period, day, zone);
     }
     function chartCandlesFor(chart, range, quote, timestamps, day) {
-        return ChartData.chartCandlesFor(chart, range, quote, timestamps, day);
+        return Candles.chartCandlesFor(chart, range, quote, timestamps, day);
     }
     function inExtendedSession(period, time, kind) {
-        return ChartData.inExtendedSession(period, time, kind);
+        return Chart.inExtendedSession(period, time, kind);
     }
     function processPanelData(json, symbol, range) {
         try {
@@ -1924,26 +1898,7 @@ PlasmoidItem {
     }
 
     function formatNumber(amount, isChange) {
-        var num = parseFloat(amount);
-        if (isNaN(num)) return amount;
-        
-        var isPositive = num >= 0;
-        var absNum = Math.abs(num);
-        
-        var hideDecs = root.hideDecimals && !isChange;
-        var formatted = hideDecs ? Math.round(absNum).toString() : absNum.toFixed(2);
-        
-        if (root.formatPrices) {
-            var parts = formatted.split(".");
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            formatted = parts.join(".");
-        }
-        
-        var sign = "";
-        if (isChange && isPositive && num > 0) sign = "+";
-        else if (!isPositive) sign = "-";
-        
-        return sign + formatted;
+        return Format.number(amount, isChange, root.hideDecimals, root.formatPrices);
     }
 
     // Empty the list and forget any cached state attached to its rows. The next fetch

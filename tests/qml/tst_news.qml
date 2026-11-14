@@ -56,13 +56,4 @@ TestCase {
         compare(items[0].id, "u1");
     }
 
-    function test_age() {
-        var now = 1794000000000; // ms
-        var t = now / 1000;
-        compare(News.age(t, now).unit, "now");
-        compare(News.age(t - 60, now).unit, "min");
-        compare(News.age(t - 3600, now).unit, "h");
-        compare(News.age(t - 86400, now).unit, "d");
-        compare(News.age(t - 9 * 86400, now).unit, "date");
-    }
 }

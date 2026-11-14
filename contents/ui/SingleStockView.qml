@@ -7,7 +7,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import "analyst"
-import "chartcurve.js" as ChartCurve
+import "domain/curve.js" as ChartCurve
 
 Rectangle {
     id: singleStockRoot
@@ -1409,7 +1409,7 @@ Rectangle {
 
     // The price line through the closes. "Straight" joins the points with plain segments.
     // "Smooth" uses monotone cubic interpolation (no overshoot, no loops) and keeps
-    // segments across large time gaps straight; see chartcurve.js.
+    // segments across large time gaps straight; see domain/curve.js.
     // `xs` (optional) gives the pixel x of every point; without it the points are spread
     // evenly over 0..right. `times` (optional) are the timestamps, used to find gaps.
     function traceSmooth(ctx, data, right, getY, xs, times) {

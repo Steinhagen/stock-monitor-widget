@@ -6,9 +6,10 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 
 ## Why this exists
 
-The widget works, but three files carry most of the behaviour: `main.qml` (2,349
-lines, 93 functions), `SingleStockView.qml` (2,231) and `config/portfolio.qml` (1,478)
-— together about half of the source tree. That has concrete costs:
+The widget works, but three files still carry most of the behaviour: `main.qml`
+(2,304 lines, ~90 functions), `SingleStockView.qml` (2,231) and
+`config/portfolio.qml` (1,478) — together about half of the source tree. That has
+concrete costs:
 
 - `main.qml` mixes configuration, theming, formatting, network I/O, market sessions,
   chart-data assembly, quote caching and view wiring. Almost every feature edits it.
@@ -236,6 +237,10 @@ instance is created in `App.qml` and passed as a `required property`.
 | Today | Target |
 |---|---|
 | `main.qml` (config, theme, math, I/O) | `app/*`, `platform/*`, `controllers/*`, `state/*` |
+
+Phase 1 moved the pure modules (`currencies`, `exchanges`, `chart`, `candles`, `curve`,
+`portfolio`, `format`, `symbols`, `sessions`, `quotes`, `news`) into `contents/ui/domain/`;
+the rows above describe where the remaining files will go.
 | `chartdata.js` | `domain/chart.js`, `domain/candles.js`, `providers/yahoo/chart.js` |
 | `chartcurve.js` | `domain/curve.js` |
 | `portfolio.js` | `domain/portfolio.js` |
@@ -271,9 +276,10 @@ instance is created in `App.qml` and passed as a `required property`.
 ./tests/run.sh
 ```
 
-Covered today: currencies (minor units/conversion), exchange labels, Yahoo news
-parsing, Google news parsing, BVB announcement parsing, backup format, chart-data
-helpers, and the news merge in `NewsController`. Provider and controller tests take
+Covered today: currencies (minor units/conversion), exchange labels, number/money and
+symbol formatting, market sessions, chart API parameters, Yahoo news parsing, Google
+news parsing, BVB announcement parsing, backup format, chart-data and candle helpers,
+and the news merge in the domain layer. Provider and controller tests take
 fixtures or injected data, so they stay deterministic.
 
 Fixtures are trimmed captures of real responses; when a provider changes its payload,
@@ -283,9 +289,11 @@ update the fixture and the parser test together.
 
 - [x] **Phase 0 — harness.** `tests/` with qmltestrunner + fixtures. No production
       change (apart from the BVB parser fix the first fixture exposed).
-- [ ] **Phase 1 — domain extraction.** Move formatting, symbols, sessions, news merge,
-      chart/candles, portfolio out of `main.qml` and the views into `domain/`. Add tests
-      as each module moves. No behaviour change.
+- [x] **Phase 1 — domain extraction.** Formatting, symbols, sessions, quotes, news
+      merge, chart/candles, curve, currencies, exchanges and portfolio now live in
+      `contents/ui/domain/`, with tests. `main.qml` keeps thin wrappers with the old
+      names so the views did not change; those wrappers go away with the controllers
+      in Phase 3.
 - [ ] **Phase 2 — core + providers.** `core/Http`, `core/Cache`; Yahoo/BVB/Google
       clients behind provider modules; news registry.
 - [ ] **Phase 3 — controllers and stores.** Split `main.qml`; introduce `AppConfig`,

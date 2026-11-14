@@ -103,17 +103,3 @@ function parse(data, symbol, allowBase, limit) {
     return max >= 0 ? items.slice(0, max) : items;
 }
 
-// Age bucket of a headline. The caller turns it into a translated string:
-//   now  - under a minute (or a time in the future)
-//   min  - n minutes, under an hour
-//   h    - n hours, under a day
-//   d    - n days, 1 to 7
-//   date - older; show the date instead
-function age(timeSec, nowMs) {
-    var seconds = Math.floor(nowMs / 1000 - Number(timeSec));
-    if (!(seconds >= 60)) return { unit: "now", n: 0 };
-    if (seconds < 3600) return { unit: "min", n: Math.floor(seconds / 60) };
-    if (seconds < 86400) return { unit: "h", n: Math.floor(seconds / 3600) };
-    if (seconds < 8 * 86400) return { unit: "d", n: Math.floor(seconds / 86400) };
-    return { unit: "date", n: 0 };
-}

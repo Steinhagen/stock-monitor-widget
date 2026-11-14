@@ -26,12 +26,18 @@ tests/
 |---|---|
 | `tst_currencies.qml` | minor units (GBp/ILA), conversion, symbols |
 | `tst_exchanges.qml` | suffix parsing, base symbol, exchange labels |
-| `tst_news.qml` | Yahoo search URL, safe links, entity decoding, parsing, dedupe, ages |
+| `tst_news.qml` | Yahoo search URL, safe links, entity decoding, parsing, dedupe |
 | `tst_googlenews.qml` | locale query, name cleaning, RSS parsing, quote-page filter |
 | `tst_bvbnews.qml` | BVB symbol handling, announcement table, ASP.NET postback |
 | `tst_backup.qml` | backup round-trip, validation, legacy portfolio data |
-| `tst_chartdata.qml` | sessions, previous close, candle aggregation |
-| `tst_news_controller.qml` | merge/dedupe across Yahoo, BVB and Google |
+| `tst_chart.qml` | sessions, trading days, previous close |
+| `tst_candles.qml` | candle targets and aggregation |
+| `tst_newsmodel.qml` | news merge, dedupe and age buckets |
+| `tst_symbols.qml` | company names, display ticker, exchange badge |
+| `tst_format.qml` | number and money formatting |
+| `tst_sessions.qml` | market status, closed state, first-quote wait |
+| `tst_quotes.qml` | chart range to API parameters |
+| `tst_news_controller.qml` | the controller delegates to the news model |
 
 Tests are offline: providers are called with fixture bodies, and the controller test
 only exercises pure merging in `NewsController`.

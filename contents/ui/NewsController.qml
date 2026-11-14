@@ -1,5 +1,6 @@
 import QtQuick
 import "news.js" as News
+import "domain/news.js" as NewsModel
 import "bvbnews.js" as BvbNews
 import "googlenews.js" as GoogleNews
 
@@ -50,26 +51,7 @@ Item {
     // than one feed (Yahoo and Google often carry the same report), so either key removes
     // it. Each provider is already sliced to newsCount.
     function mergeNews(yahoo, bvb, google) {
-        var merged = [];
-        var seen = {};
-        var add = function(items) {
-            for (var i = 0; i < items.length; i++) {
-                var item = items[i];
-                var linkKey = String(item.link || "").trim().toLowerCase();
-                var titleKey = String(item.title || "").trim().toLowerCase();
-                var lk = linkKey === "" ? "" : "l:" + linkKey;
-                var tk = titleKey === "" ? "" : "t:" + titleKey;
-                if ((lk !== "" && seen[lk]) || (tk !== "" && seen[tk])) continue;
-                if (lk !== "") seen[lk] = true;
-                if (tk !== "") seen[tk] = true;
-                merged.push(item);
-            }
-        };
-        add(yahoo || []);
-        add(bvb || []);
-        add(google || []);
-        merged.sort(function(a, b) { return (Number(b.time) || 0) - (Number(a.time) || 0); });
-        return merged;
+        return NewsModel.merge(yahoo, bvb, google);
     }
 
     // Called once for each provider. It keeps that provider's previous items when the
@@ -408,7 +390,7 @@ Item {
         // Read the clock so QML re-evaluates callers every minute.
         if (newsClock < 0) return "";
         if (!(timeSec > 0)) return "";
-        var age = News.age(timeSec, Date.now());
+        var age = NewsModel.age(timeSec, Date.now());
         switch (age.unit) {
             case "now": return i18nc("@item:news age", "just now");
             case "min": return i18ncp("@item:news age", "%1 min ago", "%1 min ago", age.n);
