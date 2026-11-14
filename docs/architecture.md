@@ -6,10 +6,10 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 
 ## Why this exists
 
-The widget works, but three files still carry most of the behaviour: `main.qml`
-(1,015 lines, ~25 functions), `SingleStockView.qml` (2,231) and
-`config/portfolio.qml` (1,478) — together about half of the source tree. That has
-concrete costs:
+The widget works, but the source is still concentrated: `config/portfolio.qml`
+(1,478 lines) and `main.qml` (1,015) carry most of the remaining behaviour, while
+`SingleStockView.qml` is down to 390 lines after the Phase 4 split. That has concrete
+costs:
 
 - `main.qml` mixes configuration, theming, formatting, network I/O, market sessions,
   chart-data assembly, quote caching and view wiring. Almost every feature edits it.
@@ -304,14 +304,14 @@ update the fixture and the parser test together.
 - [x] **Phase 3 — controllers and stores.** `AppConfig`, `AppActions`, `App`, `QuoteStore`,
       the FX, market, refresh, quote, watchlist and cache controllers are in, and
       `main.qml` keeps the public names the views use. It is down to about 1,015 lines;
-      the remaining bulk is the theme, the tooltip and the two view compositions.
-- [ ] **Phase 4 — view decomposition.** In progress: the colour system moved to
-      `platform/Theme.qml` (system palette injected, WCAG helpers tested) and the theme
-      migration to `AppConfig`, and the news list/rows/menu moved to
-      `ui/single/NewsPane.qml`. The chart Canvas and all of its drawing moved to
-      `ui/single/ChartCanvas.qml`, the header to `ui/single/StockHeader.qml` and the
-      quote rows to `ui/single/QuoteBlock.qml`. Next: the shared components and the
-      remaining `rootItem.*` reach-through.
+      the remaining bulk is the tooltip and the two view compositions.
+- [ ] **Phase 4 — view decomposition.** In progress. Moved so far: the colour system
+      to `platform/Theme.qml` (system palette injected, WCAG helpers tested), the theme
+      migration to `AppConfig`, the news list to `ui/single/NewsPane.qml`, the chart to
+      `ui/single/ChartCanvas.qml`, the header to `ui/single/StockHeader.qml`, the quote
+      rows to `ui/single/QuoteBlock.qml` and the controls above the chart to
+      `ui/single/ChartControls.qml`. Next: the shared button/text components and the
+      remaining `rootItem.*` reach-through in the other views.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the
       portfolio page, move backup into `settings/importExport/`.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
