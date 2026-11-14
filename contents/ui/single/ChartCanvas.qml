@@ -361,8 +361,10 @@ import "../domain/curve.js" as ChartCurve
         if (plotRight < 20 || plotBottom < 20) return;
 
         var light = applet.isLightTheme;
-        var bg = light ? "#ffffff" : "#101417";
-        var border = light ? "rgba(0, 0, 0, 0.14)" : "rgba(255, 255, 255, 0.16)";
+        // Follow the theme surface: the Application preset paints its own card, while
+        // the Plasma preset uses the window surface behind the widget.
+        var bg = applet.usesPlasmaSurface ? applet.surfaceBackground : applet.bgColor;
+        var border = light ? "rgba(0, 0, 0, 0.16)" : "rgba(255, 255, 255, 0.18)";
         var text = light ? "#171a1c" : "#f3f5f6";
         var muted = light ? "#5d656c" : "#9aa2a9";
 
@@ -391,25 +393,30 @@ import "../domain/curve.js" as ChartCurve
         ctx.fill();
         ctx.restore();
 
-        ctx.font = "9px sans-serif";
+        var titleFont = "10px sans-serif";
+        var priceFont = "bold 16px sans-serif";
+        var detailFont = "11px sans-serif";
+        var volumeFont = "10px sans-serif";
+        ctx.font = titleFont;
         var titleWidth = ctx.measureText(title).width;
-        ctx.font = "bold 12px sans-serif";
+        ctx.font = priceFont;
         var priceWidth = ctx.measureText(price).width;
-        ctx.font = "9px sans-serif";
+        ctx.font = detailFont;
         var detail1Width = detail1 ? ctx.measureText(detail1).width : 0;
+        ctx.font = volumeFont;
         var detail2Width = detail2 ? ctx.measureText(detail2).width : 0;
-        var tipW = Math.max(titleWidth, priceWidth, detail1Width, detail2Width) + 16;
-        var tipH = 7 + 12 + 16 + (detail1 ? 12 : 0) + (detail2 ? 12 : 0) + 5;
+        var tipW = Math.max(titleWidth, priceWidth, detail1Width, detail2Width) + 22;
+        var tipH = 74 - (detail2 ? 0 : 10);
 
-        var tipX = x + 12;
-        if (tipX + tipW > plotRight - 2) tipX = x - 12 - tipW;
+        var tipX = x + 14;
+        if (tipX + tipW > plotRight - 2) tipX = x - 14 - tipW;
         if (tipX < 2) tipX = 2;
         var tipY = y - tipH / 2;
         if (tipY < 2) tipY = 2;
         if (tipY + tipH > plotBottom - 2) tipY = Math.max(2, plotBottom - tipH - 2);
 
         ctx.save();
-        roundRectPath(ctx, tipX, tipY, tipW, tipH, 5);
+        roundRectPath(ctx, tipX, tipY, tipW, tipH, 6);
         ctx.fillStyle = bg;
         ctx.fill();
         ctx.strokeStyle = border;
@@ -418,24 +425,24 @@ import "../domain/curve.js" as ChartCurve
 
         ctx.textAlign = "left";
         ctx.textBaseline = "top";
-        ctx.font = "9px sans-serif";
+        ctx.font = titleFont;
         ctx.fillStyle = muted;
-        ctx.fillText(title, tipX + 8, tipY + 7);
-        ctx.font = "bold 12px sans-serif";
+        ctx.fillText(title, tipX + 11, tipY + 9);
+        ctx.font = priceFont;
         ctx.fillStyle = text;
-        ctx.fillText(price, tipX + 8, tipY + 19);
+        ctx.fillText(price, tipX + 11, tipY + 22);
 
-        var lineY = tipY + 36;
+        var lineY = tipY + 42;
         if (detail1) {
-            ctx.font = "9px sans-serif";
+            ctx.font = detailFont;
             ctx.fillStyle = detail1Color;
-            ctx.fillText(detail1, tipX + 8, lineY);
-            lineY += 12;
+            ctx.fillText(detail1, tipX + 11, lineY);
+            lineY += 13;
         }
         if (detail2) {
-            ctx.font = "9px sans-serif";
+            ctx.font = volumeFont;
             ctx.fillStyle = muted;
-            ctx.fillText(detail2, tipX + 8, lineY);
+            ctx.fillText(detail2, tipX + 11, lineY);
         }
         ctx.restore();
     }

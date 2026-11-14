@@ -348,6 +348,7 @@ PlasmoidItem {
     // Amber that stays readable on light and dark cards, used while data is cached.
     readonly property color warningTextColor: app.theme.warningTextColor
     readonly property color bgColor: app.theme.bgColor
+    readonly property color surfaceBackground: app.theme.surfaceBackground
     readonly property color chartBaseColor: app.theme.chartBaseColor
     readonly property color secondaryTextColor: app.theme.secondaryTextColor
 

@@ -20,6 +20,9 @@ TestCase {
         property bool showChartVolume: false
         property string effectiveChartRange: "1D"
         property bool isLightTheme: false
+        property bool usesPlasmaSurface: false
+        property color bgColor: "#1a1a1a"
+        property color surfaceBackground: "#202326"
         property color chartBaseColor: "#333333"
         property color secondaryTextColor: "#888888"
         property color positiveColor: "#4cd964"
@@ -53,6 +56,15 @@ TestCase {
             createLinearGradient: function() { return gradient; },
             measureText: function(text) { return { width: String(text).length * 6 }; }
         };
+    }
+
+    function test_hoverCard() {
+        var component = Qt.createComponent(Qt.resolvedUrl("../../contents/ui/single/ChartCanvas.qml"));
+        compare(component.status, Component.Ready, component.errorString());
+        var canvas = component.createObject(this, { "applet": fakeApplet, "host": fakeHost });
+        verify(canvas !== null);
+        canvas.drawHover(makeContext(), 400, 300, 300, 200, 120, "#ff5f56",
+                         "14:44", "€8.79", "-0.03 (-0.32%)", "#ff5f56", "Vol 5.3 K");
     }
 
     function test_drawReferenceChart() {
