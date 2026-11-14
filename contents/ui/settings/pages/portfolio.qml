@@ -182,7 +182,7 @@ Item {
     }
 
     function clearForm() {
-        lotEditor.reset();
+        lotEditor.resetFields();
         page.editingIndex = -1;
     }
 
@@ -757,9 +757,9 @@ Item {
     // ----------------------------------------------------------------------
     LotEditor {
         id: lotEditor
-        availableWidth: page.width
+        hostWidth: page.width
         editing: page.editingIndex >= 0
-        onDismissed: page.editingIndex = -1
+        onClosedByUser: page.editingIndex = -1
         onSaveRequested: page.addLot()
     }
 

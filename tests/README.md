@@ -5,6 +5,7 @@ QML unit and controller tests for the widget, run with `qmltestrunner`.
 ```
 ./tests/run.sh      # component tests
 ./tests/lint.sh     # QML syntax gate (also run in CI)
+./tests/smoke.sh    # compile-load every QML file (local, needs Plasma)
 ```
 
 The script exports `QML_XHR_ALLOW_FILE_READ=1` (the fixture loader reads local files
@@ -16,6 +17,7 @@ with `XMLHttpRequest`) and runs with the offscreen platform, so no display is ne
 tests/
 ├── run.sh                  # component tests
 ├── lint.sh                 # QML syntax check
+├── smoke.sh                # compile-load all views (local only)
 ├── qml/
 │   ├── Fixture.js          # read(url) helper for fixtures
 │   └── tst_*.qml           # one TestCase per module

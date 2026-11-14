@@ -9,7 +9,7 @@ import "../../domain/currencies.js" as Currency
 Dialog {
     id: editor
     property bool editing: false
-    property real availableWidth: 900
+    property real hostWidth: 900
     property alias ticker: portfolioTickerField.text
     property alias shares: portfolioSharesSpin.value
     property alias costText: portfolioCostField.text
@@ -19,9 +19,9 @@ Dialog {
     property string formError: ""
 
     signal saveRequested()
-    signal dismissed()
+    signal closedByUser()
 
-    function reset() {
+    function resetFields() {
         ticker = "";
         shares = 0;
         costText = "";
@@ -42,11 +42,11 @@ Dialog {
     }
     title: editor.editing ? i18n("Edit Lot") : i18n("Add Lot")
     modal: true
-    width: Math.max(360, Math.min(540, editor.availableWidth - Kirigami.Units.largeSpacing * 2))
+    width: Math.max(360, Math.min(540, editor.hostWidth - Kirigami.Units.largeSpacing * 2))
     closePolicy: Popup.CloseOnEscape
     onClosed: {
-        reset();
-        dismissed();
+        resetFields();
+        closedByUser();
     }
 
     contentItem: ColumnLayout {
