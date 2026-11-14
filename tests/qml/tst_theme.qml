@@ -17,12 +17,12 @@ TestCase {
         property int bgOpacity: 100
     }
 
-    function make(systemBackground, config) {
+    function make(systemBackground, config, hostText) {
         var component = Qt.createComponent(Qt.resolvedUrl("../../contents/ui/platform/Theme.qml"));
         compare(component.status, Component.Ready, component.errorString());
         var theme = component.createObject(this, {
             "config": config || fakeConfig,
-            "systemTextColor": "#eff0f1",
+            "hostTextColor": hostText || "#eff0f1",
             "systemBackgroundColor": systemBackground,
             "systemDisabledTextColor": "#7f8c8d"
         });
@@ -67,9 +67,23 @@ TestCase {
         fakeConfig.themeColors = 0;
     }
 
+    function test_editModeFallback() {
+        // Plasma can hand the widget the same black text and background in edit mode.
+        fakeConfig.themePreset = 1;
+        var theme = make("#000000", fakeConfig, "#000000");
+        verify(Qt.colorEqual(theme.systemTextColor, "#ffffff"));
+        verify(Qt.colorEqual(theme.tickerColor, "#ffffff"));
+        fakeConfig.themePreset = 0;
+    }
+
+    function test_lightFallback() {
+        var theme = make("#ffffff", fakeConfig, "#ffffff");
+        verify(Qt.colorEqual(theme.systemTextColor, "#000000"));
+    }
+
     function test_plasmaSurface() {
         fakeConfig.themePreset = 1;
-        var theme = make("#ffffff");
+        var theme = make("#1a1a1a");
         compare(theme.usesPlasmaSurface, true);
         compare(theme.appDrawnSurface, false);
         verify(Qt.colorEqual(theme.tickerColor, "#eff0f1"));

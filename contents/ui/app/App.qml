@@ -11,7 +11,7 @@ Item {
 
     property var configuration: null
     // Host palette, passed by main.qml from Kirigami.
-    property color systemTextColor: "#ffffff"
+    property color hostTextColor: "#ffffff"
     property color systemBackgroundColor: "#1a1a1a"
     property color systemDisabledTextColor: "#888888"
 
@@ -23,7 +23,7 @@ Item {
     Theme {
         id: themeObject
         config: configObject
-        systemTextColor: app.systemTextColor
+        hostTextColor: app.hostTextColor
         systemBackgroundColor: app.systemBackgroundColor
         systemDisabledTextColor: app.systemDisabledTextColor
     }

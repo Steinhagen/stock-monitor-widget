@@ -22,7 +22,7 @@ PlasmoidItem {
     App {
         id: app
         configuration: Plasmoid.configuration
-        systemTextColor: Kirigami.Theme.textColor
+        hostTextColor: Kirigami.Theme.textColor
         systemBackgroundColor: Kirigami.Theme.backgroundColor
         systemDisabledTextColor: Kirigami.Theme.disabledTextColor
     }

@@ -8,9 +8,14 @@ QtObject {
 
     // Typed configuration (AppConfig) and the host palette.
     property var config: null
-    property color systemTextColor: "#ffffff"
+    property color hostTextColor: "#ffffff"
     property color systemBackgroundColor: "#1a1a1a"
     property color systemDisabledTextColor: "#888888"
+
+    // Edit mode can hand the widget a text colour that matches the background (Plasma
+    // switches the scheme for the toolbox); fall back to readable black or white.
+    readonly property color systemTextColor: readableText(hostTextColor, systemBackgroundColor)
+
 
     // Preset: 0 = Application, 1 = Plasma. -1 is the "not migrated yet" sentinel.
     readonly property int themePreset: config && config.themePreset === 0 ? 0 : 1
@@ -65,6 +70,11 @@ QtObject {
     function contrastRatio(a, b) {
         var la = luminance(a), lb = luminance(b);
         return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    }
+
+    function readableText(color, bg) {
+        if (contrastRatio(color, bg) >= 3) return color;
+        return bg.hslLightness > 0.5 ? "#000000" : "#ffffff";
     }
 
     // Returns the colour unchanged when it already reads well on bg. Otherwise keeps the
