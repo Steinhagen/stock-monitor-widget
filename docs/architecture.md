@@ -7,7 +7,7 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 ## Why this exists
 
 The widget works, but three files still carry most of the behaviour: `main.qml`
-(2,215 lines, ~85 functions), `SingleStockView.qml` (2,231) and
+(1,952 lines, ~70 functions), `SingleStockView.qml` (2,231) and
 `config/portfolio.qml` (1,478) — together about half of the source tree. That has
 concrete costs:
 
@@ -100,6 +100,7 @@ contents/
     │   ├── AnalystController.qml
     │   ├── PortfolioController.qml
     │   ├── FxController.qml
+    │   ├── MarketController.qml         # pre/post sessions, extended quote
     │   └── PanelController.qml         # cycle, alternate labels, panel ticker
     ├── platform/
     │   ├── PlasmaSettings.qml          # configuration + one-time migration
@@ -301,12 +302,16 @@ update the fixture and the parser test together.
       registry: adding a source is a descriptor plus one registry entry. `main.qml`
       uses the Yahoo chart and FX providers for every request it makes.
 - [ ] **Phase 3 — controllers and stores.** Split `main.qml`; introduce `AppConfig`,
-      `AppActions`, `App.qml`; `main.qml` becomes composition.
+      `AppActions`, `App.qml`; `main.qml` becomes composition. In progress:
+      `app/AppConfig.qml`, `app/App.qml`, `controllers/FxController.qml` and
+      `controllers/MarketController.qml` are in. The quote/chart split and the
+      remaining stores are next.
 - [ ] **Phase 4 — view decomposition.** Split `SingleStockView`; extract shared
       components; `Theme`; remove `rootItem.*` from components.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the
       portfolio page, move backup into `settings/importExport/`.
-- [ ] **Phase 6 — CI.** Run `tests/run.sh` in the workflow.
+- [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
+      on every pull request (done ahead of the other phases).
 
 Every phase is shippable on its own and should not change behaviour (except where a
 test exposes a bug).

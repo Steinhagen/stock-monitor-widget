@@ -42,6 +42,9 @@ tests/
 | `tst_cache.qml` | cache key, freshness and back-off rules |
 | `tst_registry.qml` | enabled news sources, BVB coverage, optional source |
 | `tst_news_controller.qml` | the controller merges the per-source lists |
+| `tst_appconfig.qml` | configuration defaults, fallbacks and clamps |
+| `tst_fxcontroller.qml` | rate cache, conversion and persistence |
+| `tst_marketcontroller.qml` | session status and extended-quote selection |
 
 Tests are offline: the provider parsers are fed fixture bodies, the request URLs are
 checked directly, and `NewsController` is exercised with a fake applet and the

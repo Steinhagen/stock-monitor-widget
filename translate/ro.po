@@ -1013,6 +1013,14 @@ msgstr "Adaugă la lista cu mai multe acțiuni"
 msgid "Added %1 to Multi Stock List."
 msgstr "Am adăugat %1 la lista cu mai multe acțiuni."
 
+#: contents/ui/controllers/MarketController.qml
+msgid "Pre-Market"
+msgstr "Înaintea deschiderii"
+
+#: contents/ui/controllers/MarketController.qml
+msgid "After-Hours"
+msgstr "După închidere"
+
 #: contents/ui/main.qml contents/ui/MultiStockView.qml contents/ui/SingleStockView.qml
 msgid "Loading..."
 msgstr "Se încarcă..."
@@ -1049,14 +1057,6 @@ msgstr "Actualizat: %1 • Următorul: %2"
 msgctxt "@item:chart range"
 msgid "All"
 msgstr "Tot"
-
-#: contents/ui/main.qml
-msgid "Pre-Market"
-msgstr "Înaintea deschiderii"
-
-#: contents/ui/main.qml
-msgid "After-Hours"
-msgstr "După închidere"
 
 #: contents/ui/MultiStockView.qml
 msgid "%1 position"

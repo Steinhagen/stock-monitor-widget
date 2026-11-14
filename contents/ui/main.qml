@@ -14,10 +14,15 @@ import "domain/format.js" as Format
 import "domain/sessions.js" as Sessions
 import "analyst"
 import "providers/yahoo/chart.js" as YahooChart
-import "providers/fx/rates.js" as FxRates
+import "app"
 
 PlasmoidItem {
     id: root
+
+    App {
+        id: app
+        configuration: Plasmoid.configuration
+    }
 
     // --- CONFIGURATION ---
     // The compact panel indicator is always transparent over the panel. On the desktop,
@@ -50,32 +55,32 @@ PlasmoidItem {
     Layout.preferredWidth: !root.inPanel ? root.fullViewPreferredWidth : root.panelItemWidth
     Layout.preferredHeight: !root.inPanel ? root.fullViewPreferredHeight : root.panelItemHeight
 
-    property string singleTicker: Plasmoid.configuration.ticker
-    property bool isMultiMode: Plasmoid.configuration.isMultiMode
-    property bool showTwoList: Plasmoid.configuration.showTwoList
+    property string singleTicker: app.config.ticker
+    property bool isMultiMode: app.config.isMultiMode
+    property bool showTwoList: app.config.showTwoList
     // Left column width in the side-by-side desktop view, in pixels. 0 means automatic
     // (both columns share the available width).
-    property int twoColumnLeftWidth: Plasmoid.configuration.twoColumnLeftWidth
+    property int twoColumnLeftWidth: app.config.twoColumnLeftWidth
     property string panelTicker: ""
     // Remember the row selected in the multi-stock list, so it is still the default
     // selection after Plasma or the host restarts.
-    property string manualPanelTickerOverride: Plasmoid.configuration.selectedTicker
-    property string multiTickers: Plasmoid.configuration.multiTickers
+    property string manualPanelTickerOverride: app.config.selectedTicker
+    property string multiTickers: app.config.multiTickers
     // Mouse actions: right click is always the context menu; these three are configurable.
-    property string mouseRowLeftAction: Plasmoid.configuration.mouseRowLeftAction || "select"
-    property string mouseMiddleAction: Plasmoid.configuration.mouseMiddleAction || "refresh"
-    property string mouseDoubleClickAction: Plasmoid.configuration.mouseDoubleClickAction || "open"
-    property bool sortAlphabetically: Plasmoid.configuration.sortAlphabetically
-    property bool swapNameAndTicker: Plasmoid.configuration.swapNameAndTicker
-    property bool showNameAndTicker: Plasmoid.configuration.showNameAndTicker
+    property string mouseRowLeftAction: app.config.mouseRowLeftAction || "select"
+    property string mouseMiddleAction: app.config.mouseMiddleAction || "refresh"
+    property string mouseDoubleClickAction: app.config.mouseDoubleClickAction || "open"
+    property bool sortAlphabetically: app.config.sortAlphabetically
+    property bool swapNameAndTicker: app.config.swapNameAndTicker
+    property bool showNameAndTicker: app.config.showNameAndTicker
     // 0 = the full Yahoo Finance symbol (BRD.RO), 1 = the base symbol (BRD),
     // 2 = the base symbol with a short exchange badge (BRD · BVB).
     readonly property int symbolDisplayMode: {
-        var mode = Number(Plasmoid.configuration.symbolDisplayMode);
+        var mode = Number(app.config.symbolDisplayMode);
         return mode >= 0 && mode <= 2 ? mode : 0;
     }
     // Polling interval, shown by the market-status tooltip so the refresh rate is visible.
-    readonly property int refreshIntervalMinutes: Plasmoid.configuration.refreshInterval
+    readonly property int refreshIntervalMinutes: app.config.refreshInterval
 
     // Yahoo returns some non-US short names from a fixed-width vendor field: the company
     // name is padded with spaces and followed by a share-class letter, e.g.
@@ -120,24 +125,24 @@ PlasmoidItem {
         if (room < metrics.advanceWidth("MMM…")) return t;
         return before + metrics.elidedText(name, Qt.ElideRight, room) + after;
     }
-    property string chartRange: Plasmoid.configuration.chartRange
+    property string chartRange: app.config.chartRange
     // Range selected with the buttons in the chart. It only affects the chart; the
     // multi-stock list keeps using `chartRange` from the settings.
-    property string chartViewRange: Plasmoid.configuration.chartViewRange
+    property string chartViewRange: app.config.chartViewRange
     // The value actually used by the chart. Keeping it apart from the config binding means
     // a button click takes effect immediately, even if the config write is delivered later.
     property string chartViewRangeActive: root.chartViewRange
     readonly property string effectiveChartRange: root.showChartRangeButtons && root.chartViewRangeActive
                                                  ? root.chartViewRangeActive : root.chartRange
     // Show the range selector in the chart instead of using the preset from the settings.
-    property bool showChartRangeButtons: Plasmoid.configuration.showChartRangeButtons
+    property bool showChartRangeButtons: app.config.showChartRangeButtons
     // Time Limits Config
-    property bool limitHours: Plasmoid.configuration.limitHours
-    property bool skipWeekendRefresh: Plasmoid.configuration.skipWeekendRefresh
-    property int startHour: Plasmoid.configuration.startHour
-    property int startMinute: Plasmoid.configuration.startMinute
-    property int endHour: Plasmoid.configuration.endHour
-    property int endMinute: Plasmoid.configuration.endMinute
+    property bool limitHours: app.config.limitHours
+    property bool skipWeekendRefresh: app.config.skipWeekendRefresh
+    property int startHour: app.config.startHour
+    property int startMinute: app.config.startMinute
+    property int endHour: app.config.endHour
+    property int endMinute: app.config.endMinute
     // Placeholders shown while a quote is still being fetched. They are kept in
     // properties so the text that is displayed is the same one the code compares against.
     readonly property string loadingText: i18n("Loading...")
@@ -199,11 +204,11 @@ PlasmoidItem {
     //
     // Preset: 0 = Application, 1 = Plasma. Fresh placements default to Plasma;
     // -1 is only the "not migrated yet" sentinel.
-    readonly property int themePreset: Plasmoid.configuration.themePreset === 0 ? 0 : 1
+    readonly property int themePreset: app.config.themePreset === 0 ? 0 : 1
     // Colors: 0 = Light, 1 = Dark, 2 = System. They apply to the Application preset;
     // Plasma always follows the system colors.
-    readonly property int themeColors: Plasmoid.configuration.themeColors === 0 ? 0
-                                      : (Plasmoid.configuration.themeColors === 1 ? 1 : 2)
+    readonly property int themeColors: app.config.themeColors === 0 ? 0
+                                      : (app.config.themeColors === 1 ? 1 : 2)
     readonly property bool inPanel: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
                                     || Plasmoid.formFactor === PlasmaCore.Types.Vertical
     // Plasma follows the system background and colors; Application draws its own cards.
@@ -219,8 +224,8 @@ PlasmoidItem {
     // The panel indicator always uses the panel's own palette, independent of the
     // widget theme, so it looks the same whichever background/colors are selected.
     readonly property color panelTextColor: Kirigami.Theme.textColor
-    readonly property color panelPositiveColor: root.withContrast(Plasmoid.configuration.positiveColor, Kirigami.Theme.backgroundColor)
-    readonly property color panelNegativeColor: root.withContrast(Plasmoid.configuration.negativeColor, Kirigami.Theme.backgroundColor)
+    readonly property color panelPositiveColor: root.withContrast(app.config.positiveColor, Kirigami.Theme.backgroundColor)
+    readonly property color panelNegativeColor: root.withContrast(app.config.negativeColor, Kirigami.Theme.backgroundColor)
     // A vertical panel constrains the applet to the panel thickness, so the compact
     // view has to fit (and elide) inside that width instead of using the content width.
     readonly property bool isVerticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
@@ -232,8 +237,8 @@ PlasmoidItem {
     // The configured gain/loss colours, adjusted only as far as needed to stay readable
     // (WCAG AA, 4.5:1) on that background. The default green is bright enough for the
     // dark theme but washes out on white, so it is darkened in the light theme.
-    property color positiveColor: root.withContrast(Plasmoid.configuration.positiveColor, root.contrastBackground)
-    property color negativeColor: root.withContrast(Plasmoid.configuration.negativeColor, root.contrastBackground)
+    property color positiveColor: root.withContrast(app.config.positiveColor, root.contrastBackground)
+    property color negativeColor: root.withContrast(app.config.negativeColor, root.contrastBackground)
 
     // WCAG relative luminance of a colour and the contrast ratio between two colours.
     function luminance(c) {
@@ -265,46 +270,46 @@ PlasmoidItem {
         return out;
     }
     property color tickerColor: getThemeColor("ticker")
-    property int tickerOpacity: Plasmoid.configuration.tickerOpacity
+    property int tickerOpacity: app.config.tickerOpacity
     property color priceColor: getThemeColor("price")
-    property int priceOpacity: Plasmoid.configuration.priceOpacity
-    property int bgOpacity: Plasmoid.configuration.bgOpacity
-    property bool hideChangePercentage: Plasmoid.configuration.hideChangePercentage
-    property bool hideTimestamps: Plasmoid.configuration.hideTimestamps
-    property bool formatPrices: Plasmoid.configuration.formatPrices
-    property bool hideDecimals: Plasmoid.configuration.hideDecimals
-    property bool showChartAxis: Plasmoid.configuration.showChartAxis
-    property bool showTimeAxis: Plasmoid.configuration.showTimeAxis
+    property int priceOpacity: app.config.priceOpacity
+    property int bgOpacity: app.config.bgOpacity
+    property bool hideChangePercentage: app.config.hideChangePercentage
+    property bool hideTimestamps: app.config.hideTimestamps
+    property bool formatPrices: app.config.formatPrices
+    property bool hideDecimals: app.config.hideDecimals
+    property bool showChartAxis: app.config.showChartAxis
+    property bool showTimeAxis: app.config.showTimeAxis
     // 0 = reference line split at the session open, 1 = candlesticks.
-    property int chartStyle: Plasmoid.configuration.chartStyle === 1 ? 1 : 0
+    property int chartStyle: app.config.chartStyle === 1 ? 1 : 0
     // 0 = smooth line, 1 = straight segments.
-    property int chartLineStyle: Plasmoid.configuration.chartLineStyle === 1 ? 1 : 0
+    property int chartLineStyle: app.config.chartLineStyle === 1 ? 1 : 0
     // Show the Line/Candles toggle in the chart.
-    property bool showChartStyleButtons: Plasmoid.configuration.showChartStyleButtons
+    property bool showChartStyleButtons: app.config.showChartStyleButtons
     // Volume is opt-in and is drawn for both chart styles.
-    property bool showChartVolume: Plasmoid.configuration.showChartVolume
+    property bool showChartVolume: app.config.showChartVolume
     // Analyst price-target markers under the chart, also opt-in.
-    property bool showAnalystTargets: Plasmoid.configuration.showAnalystTargets
-    property bool showChartHover: Plasmoid.configuration.showChartHover
+    property bool showAnalystTargets: app.config.showAnalystTargets
+    property bool showChartHover: app.config.showChartHover
     // Latest news headlines for the single-stock view (the Chart/News icons in its header).
-    property bool showNews: Plasmoid.configuration.showNews
-    property bool newsSourceYahoo: Plasmoid.configuration.newsSourceYahoo
-    property bool newsSourceBvb: Plasmoid.configuration.newsSourceBvb
-    property bool newsSourceGoogle: Plasmoid.configuration.newsSourceGoogle
-    property int newsCount: Plasmoid.configuration.newsCount
-    property int newsRefreshMinutes: Plasmoid.configuration.newsRefreshMinutes
+    property bool showNews: app.config.showNews
+    property bool newsSourceYahoo: app.config.newsSourceYahoo
+    property bool newsSourceBvb: app.config.newsSourceBvb
+    property bool newsSourceGoogle: app.config.newsSourceGoogle
+    property int newsCount: app.config.newsCount
+    property int newsRefreshMinutes: app.config.newsRefreshMinutes
     // "chart" or "news": what the single-stock view shows below the quote. Not persisted:
     // the widget always starts on the chart, so a login never fetches news.
     property string singleViewPane: "chart"
     // Portfolio Tracking (purchase price vs current price). Each purchase is its own lot
     // (same ticker can have several, bought at different prices); the lots of a ticker are
     // added up into one position, summarised on a single line.
-    property bool showPortfolioMode: Plasmoid.configuration.showPortfolioMode
-    property string portfolioData: Plasmoid.configuration.portfolioData
+    property bool showPortfolioMode: app.config.showPortfolioMode
+    property string portfolioData: app.config.portfolioData
     // Currency the portfolio totals are shown in. Lots keep their own currency; this is
     // only the common currency they are converted to when they have to be added up.
-    property string portfolioCurrency: Currency.isKnown(Plasmoid.configuration.portfolioCurrency)
-                                        ? Currency.major(Plasmoid.configuration.portfolioCurrency)
+    property string portfolioCurrency: Currency.isKnown(app.config.portfolioCurrency)
+                                        ? Currency.major(app.config.portfolioCurrency)
                                         : "USD"
     property var portfolioSummary: root.getPortfolioSummary(root.singleTicker, root.portfolioData, root.currentRawPrice, root.previousClose, root.quoteCurrency)
     property bool hasPortfolioEntry: root.portfolioSummary !== null
@@ -323,7 +328,7 @@ PlasmoidItem {
     // can start the widget before the network (or a VPN) is up; showing the previous
     // values with their real timestamp keeps the widget useful as long as they are
     // never presented as live prices.
-    property double cachedQuotesTime: Number(Plasmoid.configuration.cachedQuotesTime) || 0
+    property double cachedQuotesTime: Number(app.config.cachedQuotesTime) || 0
     // True while the list (or, in single mode, the whole view) still shows cached values.
     property bool showingCachedData: false
     // Whether the values in the panel indicator come from the snapshot. In multi mode one
@@ -359,12 +364,12 @@ PlasmoidItem {
             if (root.usesPlasmaSurface)
                 return Kirigami.Theme.textColor;
 
-            return Qt.colorEqual(Plasmoid.configuration.tickerColor, "#ffffff") && root.appLightPalette ? "#000000" : Plasmoid.configuration.tickerColor;
+            return Qt.colorEqual(app.config.tickerColor, "#ffffff") && root.appLightPalette ? "#000000" : app.config.tickerColor;
         } else if (what === "price") {
             if (root.usesPlasmaSurface)
                 return Kirigami.Theme.textColor;
 
-            return Qt.colorEqual(Plasmoid.configuration.priceColor, "#ffffff") && root.appLightPalette ? "#000000" : Plasmoid.configuration.priceColor;
+            return Qt.colorEqual(app.config.priceColor, "#ffffff") && root.appLightPalette ? "#000000" : app.config.priceColor;
         } else if (what === "background") {
             // Plasma paints the surface behind the views, or the full view draws the
             // single forced light/dark Plasma-style surface instead.
@@ -430,87 +435,24 @@ PlasmoidItem {
     }
 
     // --- EXCHANGE RATES ---
-    // Lots can be bought in different currencies, so positions and the portfolio total
-    // sometimes have to be converted. The rates for all currencies come from a free daily
-    // feed and are cached in the applet configuration; a timer checks once an hour and
-    // downloads them only when the feed's next daily update is due (or after 24 hours).
-    property string exchangeRatesJson: Plasmoid.configuration.exchangeRates
-    property var exchangeRates: {
-        try {
-            var cached = JSON.parse(root.exchangeRatesJson || "{}");
-            return (cached && cached.rates) ? cached.rates : ({});
-        } catch (e) {
-            return ({});
-        }
-    }
-    property double exchangeRatesUpdated: Number(Plasmoid.configuration.exchangeRatesUpdated) || 0
-    property double exchangeRatesNext: Number(Plasmoid.configuration.exchangeRatesNext) || 0
-    property bool exchangeRatesFetching: false
+    // The rates, their cache and the hourly refresh live in FxController; these wrappers
+    // keep the API the portfolio views already use.
+    readonly property var exchangeRates: app.fx.exchangeRates
+    readonly property double exchangeRatesUpdated: app.fx.exchangeRatesUpdated
+    readonly property double exchangeRatesNext: app.fx.exchangeRatesNext
+    readonly property bool exchangeRatesFetching: app.fx.exchangeRatesFetching
 
-    // Converts an amount between currencies through the cached daily rates. Returns null
-    // when a rate is not known yet, so callers can tell "no rate" apart from a real zero.
     function convertMoney(amount, from, to) {
-        return Currency.convert(amount, from, to, root.exchangeRates);
+        return app.fx.convertMoney(amount, from, to);
     }
 
-    function exchangeRatesDue() {
-        // A missing or unreadable cache is due even if its timestamp looks fresh.
-        if (!root.exchangeRates || Object.keys(root.exchangeRates).length < 2) return true;
-        if (root.exchangeRatesUpdated <= 0) return true;
-        var now = Math.floor(Date.now() / 1000);
-        if (root.exchangeRatesNext > 0) return now >= root.exchangeRatesNext;
-        return now - root.exchangeRatesUpdated >= 24 * 60 * 60;
-    }
-
-    function finishExchangeRates(error) {
-        root.exchangeRatesFetching = false;
-        if (error) console.log("Exchange rates: " + error);
-    }
-
-    // Stores the feed's rates. `rates` maps a currency code to units of that currency per
-    // one unit of `base`; the cross-rate conversion in currencies.js works with any base.
+    function exchangeRatesDue() { return app.fx.exchangeRatesDue(); }
+    function finishExchangeRates(error) { app.fx.finishExchangeRates(error); }
     function saveExchangeRates(base, rates, updated, next) {
-        if (!rates) return false;
-        var clean = {};
-        var count = 0;
-        for (var code in rates) {
-            var value = Number(rates[code]);
-            if (!(value > 0)) continue;
-            clean[String(code).toUpperCase()] = value;
-            count++;
-        }
-        if (count < 2) return false;
-        var b = String(base || "USD").toUpperCase();
-        if (!(clean[b] > 0)) clean[b] = 1;
-        try {
-            Plasmoid.configuration.exchangeRates = JSON.stringify({ base: b, rates: clean });
-            Plasmoid.configuration.exchangeRatesUpdated = String(updated);
-            Plasmoid.configuration.exchangeRatesNext = String(next);
-        } catch (e) {
-            console.log("Error saving exchange rates: " + e);
-            return false;
-        }
-        root.exchangeRatesFetching = false;
-        return true;
+        return app.fx.saveExchangeRates(base, rates, updated, next);
     }
-
-    function fetchExchangeRates() {
-        if (root.exchangeRatesFetching) return;
-        root.exchangeRatesFetching = true;
-        FxRates.fetch(function(rates, error) {
-            if (error) {
-                root.finishExchangeRates(error);
-                return;
-            }
-            if (!root.saveExchangeRates(rates.base, rates.rates, rates.updated, rates.next))
-                root.finishExchangeRates("no exchange-rate feed available");
-        });
-    }
-
-    function maybeRefreshExchangeRates() {
-        if (root.exchangeRatesFetching) return;
-        if (root.exchangeRatesDue()) root.fetchExchangeRates();
-    }
+    function fetchExchangeRates() { app.fx.fetchExchangeRates(); }
+    function maybeRefreshExchangeRates() { app.fx.maybeRefreshExchangeRates(); }
 
     // --- NEWS HEADLINES ---
     // Fetched only while the News pane is on screen, never by the quote timer. Kept in
@@ -810,225 +752,23 @@ PlasmoidItem {
         if (root.mouseDoubleClickAction === "open") root.openYahooQuote(symbol);
     }
 
-    // --- PRE-MARKET / AFTER-MARKET ---
-    // Latest pre-market or after-hours quote per requested symbol, as
-    // { label, time, price, change, pct, isPos }. Only the quote from the session
-    // running now is surfaced (see extendedQuote()).
-    property bool showExtendedHours: Plasmoid.configuration.showExtendedHours
-    // Keep the last pre-market/after-hours quote visible after its session ends, marked
-    // as closed, instead of falling back to the regular close only.
-    property bool keepExtendedAfterClose: Plasmoid.configuration.keepExtendedAfterClose
-    property var extendedData: ({})
-    // Last extended-hours quote seen per symbol, kept separately so it can still be
-    // shown (marked closed) after its session ends.
-    property var lastExtendedData: ({})
+    // --- PRE-MARKET / AFTER-HOURS ---
+    // The extended-hours state, the session clock and the selection rules live in
+    // MarketController; these wrappers keep the API used by the views and the quote
+    // workflows.
+    property bool showExtendedHours: app.config.showExtendedHours
+    property bool keepExtendedAfterClose: app.config.keepExtendedAfterClose
 
-    // Trading sessions from the latest quote metadata, per symbol. Keeping them
-    // lets the open/closed state be evaluated at display time instead of only
-    // when a quote was fetched.
-    property var marketSessions: ({})
-    // Bumped once a minute so bindings that call marketStatusFor() re-evaluate
-    // when a session starts or ends, even if no new quote arrived in between.
-    property int marketClock: 0
-    Timer {
-        interval: 60000
-        running: root.showExtendedHours
-        repeat: true
-        onTriggered: root.marketClock++
-    }
-
-    function setExtendedData(symbol, entry) {
-        var copy = Object.assign({}, root.extendedData);
-        if (entry) copy[symbol] = entry;
-        else delete copy[symbol];
-        root.extendedData = copy;
-    }
-
-    function setLastExtendedData(symbol, entry) {
-        var copy = Object.assign({}, root.lastExtendedData);
-        if (entry) copy[symbol] = entry;
-        else delete copy[symbol];
-        root.lastExtendedData = copy;
-    }
-
-    function setMarketSession(symbol, meta) {
-        var periods = meta.currentTradingPeriod || ({});
-        var previous = root.marketSessions[symbol] || ({});
-        var copy = Object.assign({}, root.marketSessions);
-        copy[symbol] = {
-            "pre": periods.pre || null,
-            "regular": periods.regular || null,
-            "post": periods.post || null,
-            "hasPrePost": meta.hasPrePostMarketData !== 0 && meta.hasPrePostMarketData !== false,
-            "crypto": meta.instrumentType === "CRYPTOCURRENCY",
-            // Time of the latest regular quote, used to tell a fresh open quote from
-            // the previous close that Yahoo still returns during the first seconds.
-            // Extended-hours responses can repeat an older time; never go backwards.
-            "quoteTime": Math.max(meta.regularMarketTime || 0, previous.quoteTime || 0)
-        };
-        root.marketSessions = copy;
-    }
-
-    // "open", "pre", "post" or "closed" for the exchange the symbol trades on,
-    // from the trading periods in the latest quote. Crypto has no closing time.
-    function marketStatusFor(symbol) {
-        var s = root.marketSessions[symbol];
-        if (!s) return "";
-        // Read the clock so QML re-evaluates callers when a session boundary passes.
-        if (root.marketClock < 0) return "";
-        return Sessions.status(s, Math.floor(Date.now() / 1000));
-    }
-
-    function hasPrePostDataFor(symbol) {
-        var s = root.marketSessions[symbol];
-        return s ? s.hasPrePost : true;
-    }
-
-    // True when the instrument's market is closed: outside every session, or in a
-    // pre/post window for an instrument that has no extended-hours trading at all
-    // (indices, for example). Unknown symbols are not marked closed.
-    function isMarketClosedFor(symbol) {
-        var s = root.marketSessions[symbol];
-        if (!s) return false;
-        return Sessions.isClosed(s, root.marketStatusFor(symbol));
-    }
-
-    // True while the regular session has started but its first quote has not arrived.
-    // Yahoo keeps returning the previous close, with its old timestamp, until the first
-    // trade of the new session reaches the feed.
-    function awaitingFirstRegularQuote(symbol) {
-        var s = root.marketSessions[symbol];
-        if (!s || !s.regular) return false;
-        // Read the clock so the waiting state re-evaluates at the session boundary.
-        if (root.marketClock < 0) return false;
-        return Sessions.awaitingFirstRegularQuote(s, Math.floor(Date.now() / 1000));
-    }
-
-    // True when a quote or candle at `time` belongs to the extended session `period`.
-    // The after-hours window is inclusive at its end: Yahoo can timestamp the final
-    // print exactly at the session end (20:00:00 ET), and a strict "before the end"
-    // check dropped that quote for some symbols. The pre-market end stays exclusive: a
-    // trade at 09:30 belongs to the regular session.
-    // The extended quote to show for a symbol: the live one while its session runs,
-    // or — when the option is enabled — the last one after the market closes. The
-    // session checks keep a Friday after-hours quote from being shown as current
-    // during a later pre-market session.
-    function extendedQuote(symbol) {
-        if (!root.showExtendedHours) return undefined;
-        var status = root.marketStatusFor(symbol);
-        var s = root.marketSessions[symbol];
-        if (status === "open" && root.awaitingFirstRegularQuote(symbol)) {
-            // The market is open, but Yahoo has not published the first regular trade yet.
-            // Keep showing the last pre-market quote instead of the previous close.
-            if (!s || !s.regular) return undefined;
-            var last = root.lastExtendedData[symbol];
-            var preStart = s.pre && s.pre.start < s.regular.start
-                           ? s.pre.start : (s.regular.start - 12 * 3600);
-            if (last && last.kind === "pre" && last.time >= preStart && last.time < s.regular.start)
-                return last;
-            return undefined;
-        }
-        if (status === "closed") {
-            if (!root.keepExtendedAfterClose) return undefined;
-            // The last extended quote of the most recent session, kept so it can
-            // still be shown once the market closes.
-            return root.lastExtendedData[symbol];
-        }
-        var e = root.extendedData[symbol];
-        if (!e || !s || !e.time) return undefined;
-        var period = status === "pre" ? s.pre : (status === "post" ? s.post : null);
-        if (!period) return undefined;
-        if (!root.inExtendedSession(period, e.time, status)) return undefined;
-        if ((status === "pre" && e.kind !== "pre")
-            || (status === "post" && e.kind !== "post")) return undefined;
-        return e;
-    }
-
-    // The chart API returns pre/post candles when asked for them. The current
-    // session comes from the metadata, not from the last candle alone: Yahoo keeps
-    // serving the last session's candles after it has ended.
-    function processExtendedData(symbol, json) {
-        try {
-            var result = json.chart.result[0];
-            var meta = result.meta;
-            root.setMarketSession(symbol, meta);
-            var status = root.marketStatusFor(symbol);
-            if (status === "open") { root.setExtendedData(symbol, null); return; }
-            if (status === "closed" && !root.keepExtendedAfterClose) {
-                root.setExtendedData(symbol, null);
-                return;
-            }
-            if (!root.hasPrePostDataFor(symbol)) { root.setExtendedData(symbol, null); return; }
-
-            var closes = result.indicators.quote[0].close;
-            var stamps = result.timestamp;
-            if (!stamps || !closes) { root.setExtendedData(symbol, null); return; }
-
-            var last = -1;
-            for (var i = closes.length - 1; i >= 0; i--) {
-                if (closes[i] !== null) { last = i; break; }
-            }
-            if (last < 0) { root.setExtendedData(symbol, null); return; }
-
-            var session = root.marketSessions[symbol];
-            var period = null;
-            // The session is kept as an untranslated kind as well, so the checks further down
-            // never depend on the wording of the (translated) label.
-            var kind = "";
-            var label = "";
-            if (status === "pre" || status === "post") {
-                period = status === "pre" ? session.pre : session.post;
-                kind = status;
-                label = status === "pre" ? i18n("Pre-Market") : i18n("After-Hours");
-            } else {
-                // Closed: keep the last session's quote if the option asks for it. The
-                // session comes from meta.tradingPeriods, not currentTradingPeriod: the
-                // latter already describes the next trading day before its pre-market
-                // starts, while the last candle still belongs to the previous day's
-                // after-hours. Looking only at today's periods dropped that quote and
-                // left "No after-hours" on screen after a restart.
-                var days = root.tradingDays(meta);
-                for (var d = days.length - 1; d >= 0 && !period; d--) {
-                    if (root.inExtendedSession(days[d].post, stamps[last], "post")) {
-                        period = days[d].post;
-                        kind = "post";
-                        label = i18n("After-Hours");
-                    } else if (root.inExtendedSession(days[d].pre, stamps[last], "pre")) {
-                        period = days[d].pre;
-                        kind = "pre";
-                        label = i18n("Pre-Market");
-                    }
-                }
-            }
-            if (!root.inExtendedSession(period, stamps[last], kind)) {
-                root.setExtendedData(symbol, null);
-                return;
-            }
-
-            var base = meta.regularMarketPrice;
-            if (!base) { root.setExtendedData(symbol, null); return; }
-
-            var price = closes[last];
-            var change = price - base;
-            var entry = {
-                "kind": kind,
-                "label": label,
-                "time": stamps[last],
-                "price": getCurrencySymbol(meta.currency) + formatNumber(price, false),
-                "change": formatNumber(change, true),
-                "pct": formatNumber((change / base) * 100, true) + "%",
-                "isPos": change >= 0
-            };
-            root.setExtendedData(symbol, entry);
-            root.setLastExtendedData(symbol, entry);
-        } catch (e) { console.log("Error parsing extended hours: " + e); }
-    }
-
-    function fetchExtendedHours(symbol) {
-        YahooChart.getExtended(symbol, function(response, error) {
-            if (!error) processExtendedData(symbol, response);
-        });
-    }
+    function setExtendedData(symbol, entry) { app.market.setExtendedData(symbol, entry); }
+    function setLastExtendedData(symbol, entry) { app.market.setLastExtendedData(symbol, entry); }
+    function setMarketSession(symbol, meta) { app.market.setMarketSession(symbol, meta); }
+    function hasPrePostDataFor(symbol) { return app.market.hasPrePostDataFor(symbol); }
+    function marketStatusFor(symbol) { return app.market.statusFor(symbol); }
+    function isMarketClosedFor(symbol) { return app.market.isMarketClosedFor(symbol); }
+    function awaitingFirstRegularQuote(symbol) { return app.market.awaitingFirstRegularQuote(symbol); }
+    function extendedQuote(symbol) { return app.market.extendedQuoteFor(symbol); }
+    function processExtendedData(symbol, json) { app.market.processExtendedData(symbol, json); }
+    function fetchExtendedHours(symbol) { app.market.fetchExtendedHours(symbol); }
 
     function refreshExtendedHours() {
         if (!root.showExtendedHours) return;
@@ -1043,7 +783,7 @@ PlasmoidItem {
     }
 
     onShowExtendedHoursChanged: {
-        if (!showExtendedHours) { extendedData = ({}); lastExtendedData = ({}); }
+        if (!showExtendedHours) app.market.clearExtended();
         // The 1D chart request includes pre/post data only while this is on.
         refreshData();
     }
@@ -1052,7 +792,7 @@ PlasmoidItem {
         if (keepExtendedAfterClose) {
             if (showExtendedHours) refreshExtendedHours();
         } else {
-            lastExtendedData = ({});
+            app.market.clearLastExtended();
         }
     }
 
@@ -1208,8 +948,8 @@ PlasmoidItem {
     // startup refresh timer can fire before Component.onCompleted, and the list still
     // needs the rows on its first pass.
     function parseCachedQuotes() {
-        var raw = Plasmoid.configuration.cachedQuotes;
-        var saved = Number(Plasmoid.configuration.cachedQuotesTime) || 0;
+        var raw = app.config.cachedQuotes;
+        var saved = Number(app.config.cachedQuotesTime) || 0;
         if (!raw || !(saved > 0)) return null;
         var data;
         try { data = JSON.parse(raw); } catch (e) { return null; }
@@ -1222,7 +962,7 @@ PlasmoidItem {
         if (root.quoteDataReceived) return;
         var data = root.parseCachedQuotes();
         if (!data) return;
-        var saved = Number(Plasmoid.configuration.cachedQuotesTime) || 0;
+        var saved = Number(app.config.cachedQuotesTime) || 0;
         root.cachedQuotesSnapshot = data;
         root.cachedQuotesTime = saved;
         if (root.isMultiMode) {
@@ -1356,7 +1096,7 @@ PlasmoidItem {
     }
     function writeQuotesCache() {
         var previous = null;
-        try { previous = JSON.parse(Plasmoid.configuration.cachedQuotes || "null"); } catch (e) {}
+        try { previous = JSON.parse(app.config.cachedQuotes || "null"); } catch (e) {}
         var now = Math.floor(Date.now() / 1000);
         var data = { "time": now, "range": root.chartRange, "rowsRange": root.chartRange,
                      "rows": [], "rowsTime": 0, "single": null, "singleTime": 0 };
@@ -1687,7 +1427,7 @@ PlasmoidItem {
 
             var now = new Date();
             root.lastUpdated = now.toLocaleTimeString(Qt.locale(), "HH:mm");
-            var next = new Date(now.getTime() + (Plasmoid.configuration.refreshInterval * 60000));
+            var next = new Date(now.getTime() + (app.config.refreshInterval * 60000));
             root.nextUpdate = next.toLocaleTimeString(Qt.locale(), "HH:mm");
             root.singleDataRange = chartRange;
             root.singleDataTicker = symbol;
@@ -1800,7 +1540,7 @@ PlasmoidItem {
 
             var now = new Date();
             root.lastUpdated = now.toLocaleTimeString(Qt.locale(), "HH:mm");
-            var next = new Date(now.getTime() + (Plasmoid.configuration.refreshInterval * 60000));
+            var next = new Date(now.getTime() + (app.config.refreshInterval * 60000));
             root.nextUpdate = next.toLocaleTimeString(Qt.locale(), "HH:mm");
             root.noteQuoteReceived();
             root.queueQuotesCacheSave();
@@ -1861,7 +1601,7 @@ PlasmoidItem {
     onIsMultiModeChanged: {
         root.clearStockRows();
         if (!isMultiMode) {
-            root.singleTicker = Qt.binding(function() { return Plasmoid.configuration.ticker; });
+            root.singleTicker = Qt.binding(function() { return app.config.ticker; });
             quotesCacheTimer.stop();
             root.singleDataRange = "";
             root.singleDataTicker = "";
@@ -1966,7 +1706,7 @@ PlasmoidItem {
     // Optionally show the price and the change percentage in the same spot of
     // the panel indicator, switching between them every N seconds, instead of
     // showing both side by side.
-    readonly property bool panelAlternate: Plasmoid.configuration.alternatePricePercent
+    readonly property bool panelAlternate: app.config.alternatePricePercent
                                            && !root.hideChangePercentage
                                            && Plasmoid.formFactor === PlasmaCore.Types.Horizontal
     // The expanded panel view uses our transparent popup for Application, which paints
@@ -1975,7 +1715,7 @@ PlasmoidItem {
     property bool panelShowPercent: false
 
     Timer {
-        interval: Math.max(3, Plasmoid.configuration.alternateInterval) * 1000
+        interval: Math.max(3, app.config.alternateInterval) * 1000
         running: root.panelAlternate
         repeat: true
         onTriggered: root.panelShowPercent = !root.panelShowPercent
@@ -1983,7 +1723,7 @@ PlasmoidItem {
     }
 
     Timer {
-        interval: Plasmoid.configuration.refreshInterval * 60000
+        interval: app.config.refreshInterval * 60000
         running: true
         repeat: true
         triggeredOnStart: true
@@ -2006,9 +1746,9 @@ PlasmoidItem {
     // The panel text is filled from the already-fetched list data; a single
     // request then refreshes the chart for the newly selected stock.
     Timer {
-        interval: Math.max(3, Plasmoid.configuration.autoCycleInterval) * 1000
+        interval: Math.max(3, app.config.autoCycleInterval) * 1000
         // Pause while the full view is open, so the stock does not change under the user.
-        running: Plasmoid.configuration.autoCycle && root.isMultiMode && stockModel.count > 1
+        running: app.config.autoCycle && root.isMultiMode && stockModel.count > 1
                  && !root.expanded
         repeat: true
         onTriggered: {

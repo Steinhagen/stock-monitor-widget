@@ -1009,6 +1009,14 @@ msgstr ""
 msgid "Added %1 to Multi Stock List."
 msgstr ""
 
+#: contents/ui/controllers/MarketController.qml
+msgid "Pre-Market"
+msgstr ""
+
+#: contents/ui/controllers/MarketController.qml
+msgid "After-Hours"
+msgstr ""
+
 #: contents/ui/main.qml contents/ui/MultiStockView.qml contents/ui/SingleStockView.qml
 msgid "Loading..."
 msgstr ""
@@ -1044,14 +1052,6 @@ msgstr ""
 #: contents/ui/main.qml
 msgctxt "@item:chart range"
 msgid "All"
-msgstr ""
-
-#: contents/ui/main.qml
-msgid "Pre-Market"
-msgstr ""
-
-#: contents/ui/main.qml
-msgid "After-Hours"
 msgstr ""
 
 #: contents/ui/MultiStockView.qml
