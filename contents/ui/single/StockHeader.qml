@@ -1,5 +1,6 @@
 pragma ComponentBehavior: Bound
 import QtQuick
+import "../components"
 import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
@@ -326,48 +327,19 @@ RowLayout {
                     { pane: "chart", icon: "office-chart-line", tip: i18nc("@info:tooltip", "Chart") },
                     { pane: "news", icon: "news-subscribe", tip: i18nc("@info:tooltip", "News") }
                 ]
-                delegate: PlasmaCore.ToolTipArea {
+                delegate: IconAction {
                     id: paneButton
                     required property var modelData
-                    readonly property bool selected: applet.singleViewPane === modelData.pane
                     width: 22
                     height: 20
+                    applet: header.applet
+                    icon: modelData.icon
                     mainText: modelData.tip
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 4
-                        color: paneButton.selected ? host.selectedTint
-                               : (paneMouse.containsMouse
-                                  ? Qt.rgba(applet.tickerColor.r,
-                                            applet.tickerColor.g,
-                                            applet.tickerColor.b, 0.07)
-                                  : "transparent")
-                    }
-
-                    Kirigami.Icon {
-                        anchors.centerIn: parent
-                        width: 16
-                        height: 16
-                        source: paneButton.modelData.icon
-                        isMask: true
-                        color: paneButton.selected ? applet.tickerColor
-                                                   : applet.secondaryTextColor
-                    }
-
-                    MouseArea {
-                        id: paneMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: applet.singleViewPane = paneButton.modelData.pane
-                    }
+                    selected: header.applet.singleViewPane === modelData.pane
+                    onClicked: header.applet.singleViewPane = modelData.pane
                 }
             }
         }
     }
 }
 
-// Two quote columns: the regular session and the extended session that is
-// relevant now (pre-market or after-hours). When there is no extended quote,
-// the single row below takes over instead of leaving an empty column.

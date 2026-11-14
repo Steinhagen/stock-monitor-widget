@@ -3,7 +3,6 @@ import QtQuick
 import "../components"
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import org.kde.plasma.core as PlasmaCore
 
 // The controls above the chart: the range and style buttons, the session note and the
 // news header (source filters, updated line, refresh).
@@ -130,34 +129,18 @@ RowLayout {
                     elide: Text.ElideRight
                 }
 
-                PlasmaCore.ToolTipArea {
+                IconAction {
                     id: newsRefreshButton
                     Layout.alignment: Qt.AlignVCenter
                     Layout.preferredWidth: 20
                     Layout.preferredHeight: 18
+                    applet: chartHeaderRow.applet
+                    icon: "view-refresh"
+                    iconSize: 14
+                    hoverOpacity: 0.14
                     mainText: i18n("Refresh news")
-
-                    Rectangle {
-                        anchors.fill: parent
-                        radius: 4
-                        color: newsRefreshMouse.containsMouse ? host.selectedTint : "transparent"
-                    }
-                    Kirigami.Icon {
-                        anchors.centerIn: parent
-                        width: 14
-                        height: 14
-                        source: "view-refresh"
-                        isMask: true
-                        color: applet.secondaryTextColor
-                        opacity: host.newsEntry && host.newsEntry.pending ? 0.5 : 1
-                    }
-                    MouseArea {
-                        id: newsRefreshMouse
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: applet.requestNews(applet.singleTicker, true)
-                    }
+                    iconOpacity: chartHeaderRow.host.newsEntry && chartHeaderRow.host.newsEntry.pending ? 0.5 : 1
+                    onClicked: chartHeaderRow.applet.requestNews(chartHeaderRow.applet.singleTicker, true)
                 }
             }
         }
