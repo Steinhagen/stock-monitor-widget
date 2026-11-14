@@ -5,7 +5,7 @@ import QtQuick.Layouts
 import QtQuick.Window
 import Qt.labs.platform as QLP
 import org.kde.kirigami as Kirigami
-import "../backup.js" as Backup
+import "../../backup.js" as Backup
 import "window.js" as ConfigWindow
 
 Item {
@@ -393,7 +393,7 @@ Item {
 
     Loader {
         id: ioLoader
-        source: "../BackupIO.qml"
+        source: "../../BackupIO.qml"
         asynchronous: false
     }
 

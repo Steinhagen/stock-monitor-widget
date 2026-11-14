@@ -6,7 +6,7 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 
 ## Why this exists
 
-The widget works, but the source is still concentrated: `config/portfolio.qml`
+The widget works, but the source is still concentrated: `settings/pages/portfolio.qml`
 (1,478 lines) and `main.qml` (1,015) carry most of the remaining behaviour, while
 `SingleStockView.qml` is down to 390 lines after the Phase 4 split. That has concrete
 costs:
@@ -314,8 +314,9 @@ update the fixture and the parser test together.
       the range, style and news-source buttons (`PillButton`), the tooltip icon buttons
       (`IconAction`) and the quote price/change labels (`PriceText`, `ChangeText`). Next:
       the remaining `rootItem.*` reach-through in the other views.
-- [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the
-      portfolio page, move backup into `settings/importExport/`.
+- [ ] **Phase 5 — settings reorganisation.** In progress: the pages moved to
+      `settings/pages/` (config.qml sources updated). Next: split the portfolio page and
+      move the backup code into `settings/importExport/`.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
       on every pull request (done ahead of the other phases).
 

@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Window
 import org.kde.kirigami as Kirigami
 import "window.js" as ConfigWindow
-import "../providers/yahoo/search.js" as YahooSearch
+import "../../providers/yahoo/search.js" as YahooSearch
 
 Item {
     id: page
