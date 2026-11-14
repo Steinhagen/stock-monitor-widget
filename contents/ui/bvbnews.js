@@ -65,8 +65,17 @@ function inputValue(tag, name) {
     return m ? m[1] : "";
 }
 
+// An <input> tag can contain ">" inside an attribute value (a headline such as
+// "Notificare prag detineri > 5%"), so the tag is matched with its quotes instead of
+// with [^>]*, which would stop at that ">".
+var INPUT_TAG = /<input\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi;
+
+function inputTags(html) {
+    return String(html).match(INPUT_TAG) || [];
+}
+
 function hiddenValue(html, name) {
-    var tags = String(html).match(/<input[^>]*>/gi) || [];
+    var tags = inputTags(html);
     for (var i = 0; i < tags.length; i++) {
         var value = inputValue(tags[i], name);
         if (value !== null) return value;
@@ -77,7 +86,7 @@ function hiddenValue(html, name) {
 // The "Stiri" tab is a submit input named ctl00$body$IFTC$<guid>. Its GUID changes
 // between page builds, so locate it by its visible label and the IFTC prefix.
 function tabButtonName(html) {
-    var tags = String(html).match(/<input[^>]*>/gi) || [];
+    var tags = inputTags(html);
     for (var i = 0; i < tags.length; i++) {
         var tag = tags[i];
         if (!new RegExp('\\bvalue="Stiri"', "i").test(tag)
@@ -115,9 +124,16 @@ function parseTable(html, tableId, symbol, limit) {
     var seen = {};
     for (var i = 0; i < rows.length; i++) {
         var row = rows[i];
-        var input = new RegExp('<input[^>]*\\bclass="[^"]*mLnkbttS[^"]*"[^>]*>', "i").exec(row);
-        if (!input) continue;
-        var titleMatch = new RegExp('\\bvalue="([^"]*)"', "i").exec(input[0]);
+        var tags = inputTags(row);
+        var input = null;
+        for (var t = 0; t < tags.length; t++) {
+            if (/\bclass="[^"]*mLnkbttS/i.test(tags[t])) {
+                input = tags[t];
+                break;
+            }
+        }
+        if (input === null) continue;
+        var titleMatch = new RegExp('\\bvalue="([^"]*)"', "i").exec(input);
         if (!titleMatch) continue;
         var title = decodeEntities(titleMatch[1]).trim();
         if (title === "") continue;

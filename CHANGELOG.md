@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   as news are filtered out. Configured on the **Chart & News** page, filtered like the
   other sources in the News header, and the “More on …” link opens the same search.
 
+### Fixed
+- BVB announcements whose title contains `>` (for example “Notificare prag
+  detineri > 5%”) were skipped, because the input-tag pattern stopped at that
+  `>` inside the attribute value. Such rows are parsed now.
+
 ## [1.7] - 2026-11-14
 
 ### Added
