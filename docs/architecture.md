@@ -9,8 +9,8 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 The widget works, and the refactor has moved the domain, providers, controllers,
 theme and most views out of the applet. Two files still hold the remaining
 concentration: `main.qml` (1,017 lines: applet wiring, the tooltip and the two
-representations) and `settings/pages/portfolio.qml` (884: quote fetching and
-layout). `SingleStockView.qml` is 389 and composes header, quote, chart and news
+representations) and `settings/pages/portfolio.qml` (830: layout and config
+staging). `SingleStockView.qml` is 389 and composes header, quote, chart and news
 components.
 
 The pressures that drove the split:
@@ -318,11 +318,11 @@ update the fixture and the parser test together.
       drawing is in `ChartCanvas`; shared widgets live in `ui/components/`; the colour
       system is `platform/Theme.qml`; and every view takes `applet` instead of reaching
       through `rootItem`.
-- [ ] **Phase 5 — settings reorganisation.** Pages in `settings/pages/`, the portfolio
-      widgets and pure model in `settings/portfolio/`, the backup format, IO wrapper and
-      file dialogs in `settings/importExport/`, and `SettingsWindow.js` in
-      `settings/components/`. The tree matches the target; the remaining item is the
-      portfolio page's quote-fetch logic (`portfolioValuation.js` now owns the totals).
+- [x] **Phase 5 — settings reorganisation.** Pages in `settings/pages/`; the portfolio
+      page split into widgets (`PortfolioTotals`, `PortfolioRow`, `DatePicker`,
+      `LotEditor`), the pure `portfolioModel.js`/`portfolioValuation.js` helpers and
+      `PortfolioQuotes`; the backup format, IO wrapper and file dialogs in
+      `settings/importExport/`; `SettingsWindow.js` in `settings/components/`.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
       on every pull request (done ahead of the other phases).
 

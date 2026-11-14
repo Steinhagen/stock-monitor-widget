@@ -3,6 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 import org.kde.kirigami as Kirigami
+import "../portfolio"
 import "../../domain/currencies.js" as Currency
 import "../components/SettingsWindow.js" as ConfigWindow
 import "../portfolio/portfolioModel.js" as PortfolioModel
@@ -30,11 +31,13 @@ Item {
     // Edit/Remove still address the original lot.
     property var filteredLots: []
     property string lotSearch: ""
-    property var quoteData: ({})
-    property bool quotesLoading: false
-    property int quoteRequestsPending: 0
-    property int quoteRequestId: 0
-    property string quotesError: ""
+    readonly property alias quoteData: portfolioQuotes.data
+    readonly property alias quotesLoading: portfolioQuotes.loading
+    readonly property alias quotesError: portfolioQuotes.error
+
+    PortfolioQuotes {
+        id: portfolioQuotes
+    }
     property string lotSortKey: ""
     property bool lotSortAscending: true
 
@@ -240,68 +243,12 @@ Item {
 
     // Quotes for the lots. The configuration page is not the applet's data model, so it
     // fetches the current price for each unique ticker to show the value and the gain.
+    // Quotes for the lots: the configuration page is not the applet's data model, so
+    // each unique ticker is fetched to show the value and gain.
     function refreshQuotes() {
-        var seen = {};
-        var tickers = [];
-        for (var i = 0; i < page.portfolioList.length; i++) {
-            var ticker = String(page.portfolioList[i].ticker || "").trim().toUpperCase();
-            if (ticker !== "" && !seen[ticker]) {
-                seen[ticker] = true;
-                tickers.push(ticker);
-            }
-        }
-
-        page.quoteRequestId++;
-        page.quotesError = "";
-        page.quoteRequestsPending = tickers.length;
-        page.quotesLoading = tickers.length > 0;
-        if (tickers.length === 0) return;
-
-        for (var j = 0; j < tickers.length; j++)
-            page.fetchQuote(tickers[j], page.quoteRequestId);
+        portfolioQuotes.refresh(page.portfolioList);
     }
 
-    function fetchQuote(ticker, requestId) {
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState !== XMLHttpRequest.DONE) return;
-            if (requestId !== page.quoteRequestId) return;
-
-            if (xhr.status === 200) {
-                try {
-                    var result = JSON.parse(xhr.responseText).chart.result[0];
-                    var meta = result.meta;
-                    var price = Number(meta.regularMarketPrice);
-                    if (!(price > 0)) throw new Error("no price");
-                    var copy = Object.assign({}, page.quoteData);
-                    copy[ticker] = {
-                        price: price,
-                        currency: meta.currency || "",
-                        previousClose: Number(meta.chartPreviousClose) || Number(meta.previousClose) || 0,
-                        time: Number(meta.regularMarketTime) || 0
-                    };
-                    page.quoteData = copy;
-                } catch (e) {
-                    page.quotesError = i18n("Some quotes are unavailable.");
-                }
-            } else {
-                page.quotesError = i18n("Some quotes are unavailable.");
-            }
-
-            page.quoteRequestsPending--;
-            if (page.quoteRequestsPending <= 0) page.quotesLoading = false;
-        };
-
-        try {
-            xhr.open("GET", "https://query1.finance.yahoo.com/v8/finance/chart/"
-                     + encodeURIComponent(ticker) + "?range=1d&interval=1d");
-            xhr.send();
-        } catch (e) {
-            page.quotesError = i18n("Some quotes are unavailable.");
-            page.quoteRequestsPending--;
-            if (page.quoteRequestsPending <= 0) page.quotesLoading = false;
-        }
-    }
 
     function quoteFor(ticker) {
         return page.quoteData[String(ticker || "").trim().toUpperCase()] || null;

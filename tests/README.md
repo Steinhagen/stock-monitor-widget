@@ -54,6 +54,7 @@ tests/
 | `tst_theme.qml` | contrast math, light/dark palettes, Plasma surface |
 | `tst_portfolio_model.qml` | lot parsing, filtering, null-last sorting, money formatting |
 | `tst_portfolio_valuation.qml` | lot value/gain, currency conversion, portfolio totals |
+| `tst_portfolio_quotes.qml` | ticker extraction, chart-meta parsing |
 | `tst_chartcanvas.qml` | chart drawing with a fake 2D context |
 
 Tests are offline: the provider parsers are fed fixture bodies, the request URLs are
