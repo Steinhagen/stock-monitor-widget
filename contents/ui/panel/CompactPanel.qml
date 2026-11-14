@@ -262,7 +262,6 @@ MouseArea {
                     text: compactRoot.shownPositive ? "▲" : "▼"
                     color: compactRoot.shownPositive ? applet.panelPositiveColor : applet.panelNegativeColor
                     font.pixelSize: 8
-                    font.weight: Font.Bold
                     renderType: Text.NativeRendering
                 }
                 // Session tag: AH = after-hours, PRE = pre-market, CLOSED = the
@@ -282,7 +281,6 @@ MouseArea {
                     color: applet.panelCurrentIsCached ? applet.warningTextColor : applet.panelTextColor
                     opacity: applet.panelCurrentIsCached ? 1.0 : 0.6
                     font.pixelSize: 8
-                    font.weight: Font.Bold
                     renderType: Text.NativeRendering
                 }
             }
