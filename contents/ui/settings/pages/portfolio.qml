@@ -662,107 +662,11 @@ Item {
             }
             // Overall portfolio summary: the same figures the widget leads with, in the
             // configured base currency, including today's move.
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.preferredHeight: totalsRow.implicitHeight + Kirigami.Units.largeSpacing * 2
-                color: Kirigami.Theme.alternateBackgroundColor
-                radius: Kirigami.Units.smallSpacing
-                border.width: 1
-                border.color: Qt.rgba(Kirigami.Theme.textColor.r, Kirigami.Theme.textColor.g,
-                                      Kirigami.Theme.textColor.b, 0.16)
-
-                GridLayout {
-                    id: totalsRow
-                    anchors.fill: parent
-                    anchors.margins: Kirigami.Units.largeSpacing
-                    columns: page.compactLayout ? 2 : 4
-                    columnSpacing: Kirigami.Units.largeSpacing
-                    rowSpacing: Kirigami.Units.smallSpacing
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 2
-                        Label {
-                            text: i18n("Invested")
-                            color: Kirigami.Theme.disabledTextColor
-                            font.pixelSize: 9
-                        }
-                        Label {
-                            text: page.summaryMoney(page.totals.cost)
-                            font.pixelSize: 15
-                            font.bold: true
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 2
-                        Label {
-                            text: i18n("Current value")
-                            color: Kirigami.Theme.disabledTextColor
-                            font.pixelSize: 9
-                        }
-                        Label {
-                            text: page.summaryMoney(page.totals.value)
-                            font.pixelSize: 15
-                            font.bold: true
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 0
-                        Label {
-                            text: i18n("Total gain")
-                            color: Kirigami.Theme.disabledTextColor
-                            font.pixelSize: 9
-                        }
-                        Label {
-                            text: page.summaryMoney(page.totals.gain)
-                            color: page.totals.gain === null
-                                   ? Kirigami.Theme.disabledTextColor
-                                   : (page.totals.gain >= 0 ? Kirigami.Theme.positiveTextColor
-                                                            : Kirigami.Theme.negativeTextColor)
-                            font.pixelSize: 15
-                            font.bold: true
-                        }
-                        Label {
-                            text: page.summaryPercent(page.totals.gainPercent)
-                            visible: page.totals.gain !== null
-                            color: page.totals.gain !== null && page.totals.gain >= 0
-                                   ? Kirigami.Theme.positiveTextColor : Kirigami.Theme.negativeTextColor
-                            font.pixelSize: 9
-                            opacity: 0.8
-                        }
-                    }
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 0
-                        Label {
-                            text: i18n("Today")
-                            color: Kirigami.Theme.disabledTextColor
-                            font.pixelSize: 9
-                        }
-                        Label {
-                            text: page.summaryMoney(page.totals.day)
-                            color: page.totals.day === null
-                                   ? Kirigami.Theme.disabledTextColor
-                                   : (page.totals.day >= 0 ? Kirigami.Theme.positiveTextColor
-                                                           : Kirigami.Theme.negativeTextColor)
-                            font.pixelSize: 15
-                            font.bold: true
-                        }
-                        Label {
-                            text: page.summaryPercent(page.totals.dayPercent)
-                            visible: page.totals.day !== null
-                            color: page.totals.day !== null && page.totals.day >= 0
-                                   ? Kirigami.Theme.positiveTextColor : Kirigami.Theme.negativeTextColor
-                            font.pixelSize: 9
-                            opacity: 0.8
-                        }
-                    }
-                }
+            PortfolioTotals {
+                totals: page.totals
+                compactLayout: page.compactLayout
+                moneyText: function(value) { return page.summaryMoney(value); }
+                percentText: function(value) { return page.summaryPercent(value); }
             }
 
             // Lots: title, Add, refresh and search on one row. The search field takes
