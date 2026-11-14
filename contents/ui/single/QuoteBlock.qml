@@ -46,6 +46,7 @@ ColumnLayout {
                         text: i18nc("@item:compact quote", "Regular").toUpperCase()
                         color: applet.secondaryTextColor
                         font.pixelSize: 8
+                        font.weight: Font.DemiBold
                         font.letterSpacing: 0.5
                     }
 
@@ -90,6 +91,7 @@ ColumnLayout {
                         color: host.hasExtendedQuote && host.extendedQuote.kind === "pre"
                                ? host.marketSessionColor : applet.secondaryTextColor
                         font.pixelSize: 8
+                        font.weight: Font.DemiBold
                         font.letterSpacing: 0.5
                         elide: Text.ElideRight
                         Layout.fillWidth: true
@@ -100,7 +102,6 @@ ColumnLayout {
                         dimmed: quote.dimmed
                         text: host.hasExtendedQuote ? host.extendedQuote.price : ""
                         font.pixelSize: 18
-                        font.bold: true
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                     }
@@ -137,6 +138,7 @@ ColumnLayout {
                     text: i18nc("@item:compact quote", "Regular").toUpperCase()
                     color: applet.secondaryTextColor
                     font.pixelSize: 8
+                    font.weight: Font.DemiBold
                     font.letterSpacing: 0.5
                     Layout.alignment: Qt.AlignVCenter
                 }
