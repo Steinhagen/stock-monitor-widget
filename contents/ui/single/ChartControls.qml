@@ -1,4 +1,6 @@
+pragma ComponentBehavior: Bound
 import QtQuick
+import "../components"
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
@@ -46,36 +48,14 @@ RowLayout {
 
         Repeater {
             model: ["1D", "5D", "1M", "6M", "YTD", "1Y", "5Y", "Max"]
-            delegate: Rectangle {
+            delegate: PillButton {
                 id: rangeButton
                 objectName: "chartRangeButton_" + modelData
                 required property string modelData
-                readonly property bool selected: rangeButton.modelData === applet.effectiveChartRange
-                // Same weight in both states, so the selected range changes only the
-                // colors. A bold selected label would change this row's implicit width,
-                // and with it the content-derived minimum width of the card, shifting
-                // the two desktop columns by a pixel whenever another range is picked.
-                width: rangeButtonLabel.implicitWidth + 8
-                height: 18
-                radius: 4
-                color: selected
-                       ? Qt.rgba(applet.tickerColor.r, applet.tickerColor.g, applet.tickerColor.b, 0.14)
-                       : "transparent"
-
-                Text {
-                    id: rangeButtonLabel
-                    anchors.centerIn: parent
-                    text: applet.chartRangeButtonLabel(rangeButton.modelData)
-                    color: rangeButton.selected ? applet.tickerColor : applet.secondaryTextColor
-                    font.pixelSize: 9
-                    font.bold: true
-                }
-
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: applet.setChartViewRange(rangeButton.modelData)
-                }
+                applet: chartHeaderRow.applet
+                text: applet.chartRangeButtonLabel(modelData)
+                selected: modelData === applet.effectiveChartRange
+                onClicked: applet.setChartViewRange(modelData)
             }
         }
     }
@@ -120,44 +100,18 @@ RowLayout {
 
                     Repeater {
                         model: host.newsSourceButtons
-                        delegate: Rectangle {
+                        delegate: PillButton {
                             id: newsSourceButton
                             required property var modelData
-                            objectName: "newsSourceButton_" + (newsSourceButton.modelData.source === ""
-                                                                ? "all" : newsSourceButton.modelData.source)
-                            readonly property bool selected: !host.newsFilterRelevant
-                                                             || host.newsSourceFilter === newsSourceButton.modelData.source
-                            width: newsSourceButtonLabel.implicitWidth + 8
-                            height: 18
-                            radius: 4
-                            color: newsSourceButton.selected
-                                   ? host.selectedTint
-                                   : (newsSourceMouse.containsMouse
-                                      ? Qt.rgba(applet.tickerColor.r,
-                                                applet.tickerColor.g,
-                                                applet.tickerColor.b, 0.07)
-                                      : "transparent")
-
-                            Text {
-                                id: newsSourceButtonLabel
-                                anchors.centerIn: parent
-                                text: newsSourceButton.modelData.label
-                                textFormat: Text.PlainText
-                                color: newsSourceButton.selected ? applet.tickerColor
-                                                                 : applet.secondaryTextColor
-                                font.pixelSize: 9
-                                font.bold: true
-                            }
-
-                            MouseArea {
-                                id: newsSourceMouse
-                                anchors.fill: parent
-                                hoverEnabled: true
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    host.newsSource = newsSourceButton.modelData.source;
-                                    chartHeaderRow.newsPane.positionViewAtBeginning();
-                                }
+                            objectName: "newsSourceButton_" + (modelData.source === "" ? "all" : modelData.source)
+                            applet: chartHeaderRow.applet
+                            text: modelData.label
+                            selected: !chartHeaderRow.host.newsFilterRelevant
+                                      || chartHeaderRow.host.newsSourceFilter === modelData.source
+                            hoverHighlight: true
+                            onClicked: {
+                                chartHeaderRow.host.newsSource = modelData.source;
+                                chartHeaderRow.newsPane.positionViewAtBeginning();
                             }
                         }
                     }
@@ -224,32 +178,14 @@ RowLayout {
                 { style: 0, label: i18nc("@item:chart style", "Line") },
                 { style: 1, label: i18nc("@item:chart style", "Candles") }
             ]
-            delegate: Rectangle {
+            delegate: PillButton {
                 id: styleButton
                 objectName: "chartStyleButton_" + modelData.style
                 required property var modelData
-                readonly property bool selected: styleButton.modelData.style === applet.chartStyle
-                // Same as the range buttons: same weight in both states, so switching
-                // between Line and Candles cannot resize the card either.
-                width: styleButtonLabel.implicitWidth + 8
-                height: 18
-                radius: 4
-                color: selected
-                       ? Qt.rgba(applet.tickerColor.r, applet.tickerColor.g, applet.tickerColor.b, 0.14)
-                       : "transparent"
-                Text {
-                    id: styleButtonLabel
-                    anchors.centerIn: parent
-                    text: styleButton.modelData.label
-                    color: styleButton.selected ? applet.tickerColor : applet.secondaryTextColor
-                    font.pixelSize: 9
-                    font.bold: true
-                }
-                MouseArea {
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: applet.setChartStyle(styleButton.modelData.style)
-                }
+                applet: chartHeaderRow.applet
+                text: modelData.label
+                selected: modelData.style === applet.chartStyle
+                onClicked: applet.setChartStyle(modelData.style)
             }
         }
     }

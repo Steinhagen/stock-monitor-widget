@@ -310,8 +310,9 @@ update the fixture and the parser test together.
       migration to `AppConfig`, the news list to `ui/single/NewsPane.qml`, the chart to
       `ui/single/ChartCanvas.qml`, the header to `ui/single/StockHeader.qml`, the quote
       rows to `ui/single/QuoteBlock.qml` and the controls above the chart to
-      `ui/single/ChartControls.qml`. Next: the shared button/text components and the
-      remaining `rootItem.*` reach-through in the other views.
+      `ui/single/ChartControls.qml`. The first shared component, `ui/components/PillButton.qml`,
+      now backs the range, style and news-source buttons. Next: the remaining shared
+      components and the `rootItem.*` reach-through in the other views.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the
       portfolio page, move backup into `settings/importExport/`.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
