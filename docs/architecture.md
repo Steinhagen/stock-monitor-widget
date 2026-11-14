@@ -7,7 +7,7 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 ## Why this exists
 
 The widget works, but three files still carry most of the behaviour: `main.qml`
-(1,952 lines, ~70 functions), `SingleStockView.qml` (2,231) and
+(1,816 lines, ~65 functions), `SingleStockView.qml` (2,231) and
 `config/portfolio.qml` (1,478) — together about half of the source tree. That has
 concrete costs:
 
@@ -303,9 +303,10 @@ update the fixture and the parser test together.
       uses the Yahoo chart and FX providers for every request it makes.
 - [ ] **Phase 3 — controllers and stores.** Split `main.qml`; introduce `AppConfig`,
       `AppActions`, `App.qml`; `main.qml` becomes composition. In progress:
-      `app/AppConfig.qml`, `app/App.qml`, `controllers/FxController.qml` and
-      `controllers/MarketController.qml` are in. The quote/chart split and the
-      remaining stores are next.
+      `app/AppConfig.qml`, `app/App.qml`, `controllers/FxController.qml`,
+      `controllers/MarketController.qml`, `state/QuoteStore.qml` and
+      `controllers/SingleQuoteController.qml` are in. The multi-stock rows, the
+      remaining stores and `AppActions` are next.
 - [ ] **Phase 4 — view decomposition.** Split `SingleStockView`; extract shared
       components; `Theme`; remove `rootItem.*` from components.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the

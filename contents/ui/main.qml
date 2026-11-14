@@ -15,6 +15,8 @@ import "domain/sessions.js" as Sessions
 import "analyst"
 import "providers/yahoo/chart.js" as YahooChart
 import "app"
+import "state"
+import "controllers"
 
 PlasmoidItem {
     id: root
@@ -22,6 +24,18 @@ PlasmoidItem {
     App {
         id: app
         configuration: Plasmoid.configuration
+    }
+
+    QuoteStore {
+        id: quoteStore
+    }
+
+    SingleQuoteController {
+        id: singleQuote
+        applet: root
+        store: quoteStore
+        market: app.market
+        stockModel: stockModel
     }
 
     // --- CONFIGURATION ---
@@ -155,47 +169,47 @@ PlasmoidItem {
     property string singleCompanyName: root.loadingText
     // Exchange of the single-view symbol: short label (BVB) and Yahoo's full name
     // (Bucharest Stock Exchange). Kept apart from the ticker for display only.
-    property string singleExchange: ""
-    property string singleExchangeFull: ""
-    property string currentPrice: "---"
-    property double currentRawPrice: 0
+    property alias singleExchange: quoteStore.singleExchange
+    property alias singleExchangeFull: quoteStore.singleExchangeFull
+    property alias currentPrice: quoteStore.currentPrice
+    property alias currentRawPrice: quoteStore.currentRawPrice
     // Timestamp of the quote (seconds since epoch), shown by the market-status tooltip so
     // it is clear how fresh the Yahoo Finance data is.
-    property double quoteTimestamp: 0
-    property string priceChange: "+0.00"
-    property string percentChange: "+0.00%"
-    property var chartDataPoints: []
+    property alias quoteTimestamp: quoteStore.quoteTimestamp
+    property alias priceChange: quoteStore.priceChange
+    property alias percentChange: quoteStore.percentChange
+    property alias chartDataPoints: quoteStore.chartDataPoints
     // Unix timestamps (seconds) parallel to chartDataPoints, used for the chart's time scale.
-    property var chartTimestamps: []
+    property alias chartTimestamps: quoteStore.chartTimestamps
     // Pre-market / after-hours points around the displayed 1D session (see
     // extendedSessionSeries), or null when the chart shows the regular session only.
-    property var chartSessions: null
+    property alias chartSessions: quoteStore.chartSessions
     // Candle aggregates (open/high/low/close/volume/time) for the candlestick chart, and
     // yesterday's close, used as the reference line of the reference-line chart.
-    property var chartCandles: []
-    property double chartReferencePrice: 0
+    property alias chartCandles: quoteStore.chartCandles
+    property alias chartReferencePrice: quoteStore.chartReferencePrice
     // Start of the session a 1D chart is showing, and whether it is today's session (the
     // running pre-market or the regular one). When it is not, the chart still shows a
     // previous session and the view labels it so it is not mistaken for today's.
-    property double chartSessionStart: 0
-    property bool chartSessionCurrent: true
+    property alias chartSessionStart: quoteStore.chartSessionStart
+    property alias chartSessionCurrent: quoteStore.chartSessionCurrent
     // True when the 1D chart plots the running pre-market; the canvas hatches it like the
     // pre-market zone of a full-day chart.
-    property bool chartPreSession: false
+    property alias chartPreSession: quoteStore.chartPreSession
     // Evaluated here rather than in the threaded Canvas paint, so the legend text is
     // translated on the main thread.
     readonly property string chartReferenceLabel: i18nc("@item:chart previous close", "Previous close")
-    property double previousClose: 0
-    property bool isPositive: true
-    property string currencySym: ""
+    property alias previousClose: quoteStore.previousClose
+    property alias isPositive: quoteStore.isPositive
+    property alias currencySym: quoteStore.currencySym
     // The currency Yahoo quotes the shown instrument in (e.g. "USD", "GBp"). Used to
     // convert the live price to the currency a portfolio lot was bought in.
-    property string quoteCurrency: ""
+    property alias quoteCurrency: quoteStore.quoteCurrency
     // Values for the compact panel indicator. They always follow the configured data
     // range; the range picked only for the chart must not change them.
-    property string panelCurrentPrice: "---"
-    property string panelCurrentPercent: "+0.00%"
-    property bool panelCurrentIsPositive: true
+    property alias panelCurrentPrice: quoteStore.panelCurrentPrice
+    property alias panelCurrentPercent: quoteStore.panelCurrentPercent
+    property alias panelCurrentIsPositive: quoteStore.panelCurrentIsPositive
     readonly property string panelSymbol: root.isMultiMode ? root.panelTicker : root.singleTicker
     // --- THEME ---
     // The background has two independent choices: a preset that applies to both the
@@ -322,8 +336,8 @@ PlasmoidItem {
     // The range and ticker the current single-view numbers were fetched for (empty while
     // they are placeholders). The cache stores change/percentage per range, so a save
     // that races a ticker or range change must not label old values as the new ones.
-    property string singleDataRange: ""
-    property string singleDataTicker: ""
+    property alias singleDataRange: quoteStore.singleDataRange
+    property alias singleDataTicker: quoteStore.singleDataTicker
     // The last successful quote batch, persisted in the applet config. At login Plasma
     // can start the widget before the network (or a VPN) is up; showing the previous
     // values with their real timestamp keeps the widget useful as long as they are
@@ -334,7 +348,7 @@ PlasmoidItem {
     // Whether the values in the panel indicator come from the snapshot. In multi mode one
     // row can still be cached while another is already live, so the panel marks its own
     // ticker instead of trusting the list-wide flag.
-    property bool panelCurrentIsCached: false
+    property alias panelCurrentIsCached: quoteStore.panelCurrentIsCached
     property var cachedQuotesSnapshot: null
     readonly property string cachedQuotesLabel: root.cachedQuotesTime > 0
         ? new Date(root.cachedQuotesTime * 1000).toLocaleString(Qt.locale(), Locale.ShortFormat)
@@ -1165,24 +1179,13 @@ PlasmoidItem {
     }
 
     function fetchSingleStock(symbol, range) {
-        var chartRange = range || root.effectiveChartRange;
-        YahooChart.get(symbol, chartRange, root.showExtendedHours, function(response, error) {
-            if (error) { root.scheduleQuoteRetry(); return; }
-            // Ignore a reply for a range or symbol the user has already switched away from.
-            if (chartRange !== root.effectiveChartRange || symbol !== root.singleTicker) return;
-            processSingleData(response, symbol, chartRange);
-        });
+        singleQuote.fetch(symbol, range);
     }
 
     // Quote for the compact panel indicator, fetched separately when the chart uses a
     // range of its own. The panel always follows the configured data range.
     function fetchPanelStock(symbol) {
-        var range = root.chartRange;
-        YahooChart.get(symbol, range, root.showExtendedHours, function(response, error) {
-            if (error) { root.scheduleQuoteRetry(); return; }
-            if (range !== root.chartRange || symbol !== root.panelSymbol) return;
-            processPanelData(response, symbol, range);
-        });
+        singleQuote.fetchPanel(symbol);
     }
 
     // The configured watchlist, cleaned and in display order.
@@ -1295,154 +1298,12 @@ PlasmoidItem {
     function inExtendedSession(period, time, kind) {
         return Chart.inExtendedSession(period, time, kind);
     }
-    function processPanelData(json, symbol, range) {
-        try {
-            var result = json.chart.result[0];
-            var meta = result.meta;
-            root.setMarketSession(symbol, meta);
-            if (!root.isMultiMode && symbol === root.singleTicker) {
-                root.singleExchange = Exchanges.shortLabel(symbol, meta.exchangeName, meta.fullExchangeName);
-                root.singleExchangeFull = Exchanges.fullLabel(symbol, meta.exchangeName, meta.fullExchangeName);
-            }
-            var current = meta.regularMarketPrice;
-            var curSym = getCurrencySymbol(meta.currency);
-            var prev;
-            if (range === "1D") {
-                prev = meta.regularMarketPreviousClose || meta.previousClose || meta.chartPreviousClose;
-            } else {
-                prev = meta.chartPreviousClose;
-                if (!prev || prev === 0) {
-                    var quotes = result.indicators.quote[0].close;
-                    var timestamps = result.timestamp;
-                    var startTime = (meta.currentTradingPeriod && meta.currentTradingPeriod.regular) ? meta.currentTradingPeriod.regular.start : 0;
-                    var cleanData = root.cleanChartData(quotes, timestamps, startTime, range).values;
-                    prev = cleanData.length > 0 ? cleanData[0] : meta.regularMarketPreviousClose;
-                }
-            }
-            var change = current - prev;
-            root.panelCurrentPrice = curSym + root.formatNumber(current, false);
-            root.panelCurrentPercent = root.formatNumber(prev > 0 ? (change / prev) * 100 : 0, true) + "%";
-            root.panelCurrentIsPositive = change >= 0;
-            root.panelCurrentIsCached = false;
-            root.noteQuoteReceived();
-        } catch (e) { console.log("Error parsing panel quote: " + e); }
-    }
-
-    function processSingleData(json, fallbackSymbol, range) {
-        try {
-            var chartRange = range || root.effectiveChartRange;
-            var result = json.chart.result[0];
-            var meta = result.meta;
-            var symbol = fallbackSymbol || root.singleTicker;
-            root.setMarketSession(symbol, meta);
-            var quote = result.indicators.quote[0] || {};
-            var quotes = quote.close || [];
-            var timestamps = result.timestamp;
-
-            root.singleCompanyName = root.companyName(meta, fallbackSymbol || root.singleTicker);
-            root.singleExchange = Exchanges.shortLabel(symbol, meta.exchangeName, meta.fullExchangeName);
-            root.singleExchangeFull = Exchanges.fullLabel(symbol, meta.exchangeName, meta.fullExchangeName);
-            root.currencySym = getCurrencySymbol(meta.currency);
-            root.quoteCurrency = meta.currency || "";
-            root.currentRawPrice = meta.regularMarketPrice;
-            root.quoteTimestamp = meta.regularMarketTime || 0;
-            root.currentPrice = root.currencySym + formatNumber(meta.regularMarketPrice, false);
-
-            var startTime = (meta.currentTradingPeriod && meta.currentTradingPeriod.regular) ? meta.currentTradingPeriod.regular.start : 0;
-            // The 1D chart plots the running pre-market, or the last completed regular
-            // session when there is nothing current to show (see chartDayFor).
-            var chartDay = chartRange === "1D" ? root.chartDayFor(meta, timestamps, quotes) : null;
-            var preChart = chartRange === "1D" && root.isPreSessionDay(meta, chartDay);
-            var day = (chartRange === "1D" && root.showExtendedHours) ? chartDay : null;
-            root.chartSessionStart = (chartDay && chartDay.regular) ? chartDay.regular.start : 0;
-            // The chart is "current" when it shows today's pre-market or regular session;
-            // otherwise it still shows a previous session and the view labels it.
-            root.chartSessionCurrent = !(root.chartSessionStart > 0)
-                || !(meta.currentTradingPeriod)
-                || (meta.currentTradingPeriod.regular && root.chartSessionStart === meta.currentTradingPeriod.regular.start)
-                || (meta.currentTradingPeriod.pre && root.chartSessionStart === meta.currentTradingPeriod.pre.start);
-            root.chartPreSession = preChart;
-            var chart = root.cleanChartData(quotes, timestamps, startTime, chartRange, quote, day);
-            if (chartRange === "1D")
-                root.seedFirstSessionPoint(chart, (day && day.regular) ? day.regular.start : startTime, meta);
-            var cleanData = chart.values;
-            root.chartSessions = (day && cleanData.length >= 2) ? root.extendedSessionSeries(quotes, timestamps, day) : null;
-            root.chartDataPoints = cleanData;
-            root.chartTimestamps = chart.times;
-
-            // The candlestick chart can be drawn from the same response; the reference
-            // chart marks yesterday's close, so it reads the same way as the daily change.
-            root.chartCandles = root.chartCandlesFor(chart, chartRange, quote, timestamps, day);
-            // The pre-market is measured against the last regular close (the official
-            // close, as shown in the regular quote); the regular chart uses the close
-            // before the session it shows.
-            var reference = preChart ? (meta.regularMarketPrice || 0) : 0;
-            root.chartReferencePrice = reference > 0 ? reference
-                : root.dailyPreviousClose(meta, cleanData.length > 0 ? cleanData[0] : 0);
-
-            // Keep the row's cached chart in sync with every fresh chart, so choosing that
-            // row again does not briefly show the older snapshot from the list refresh.
-            if (root.isMultiMode && chartRange === root.chartRange) {
-                for (var ci = 0; ci < stockModel.count; ci++) {
-                    if (stockModel.get(ci).ticker === symbol) {
-                        stockModel.set(ci, {
-                            "chartPoints": JSON.stringify(cleanData),
-                            "chartTimes": JSON.stringify(chart.times),
-                            "chartSessions": root.chartSessions,
-                            "chartCandles": JSON.stringify(root.chartCandles),
-                            "chartRef": root.chartReferencePrice,
-                            "chartPre": root.chartPreSession,
-                            "chartSessionStart": root.chartSessionStart,
-                            "chartSessionCurrent": root.chartSessionCurrent,
-                            "quoteTime": root.quoteTimestamp
-                        });
-                        break;
-                    }
-                }
-            }
-
-            if (chartRange === "1D") {
-                root.previousClose = meta.regularMarketPreviousClose || meta.previousClose || meta.chartPreviousClose;
-            } else {
-                root.previousClose = meta.chartPreviousClose;
-                if (!root.previousClose || root.previousClose === 0) {
-                    root.previousClose = cleanData.length > 0 ? cleanData[0] : meta.regularMarketPreviousClose;
-                }
-            }
-
-            var change = meta.regularMarketPrice - root.previousClose;
-            root.isPositive = change >= 0;
-            root.priceChange = formatNumber(change, true);
-            root.percentChange = formatNumber((change / root.previousClose) * 100, true) + "%";
-
-            // In single mode this response can also serve the panel when the chart is
-            // showing the configured range. When the chart has its own range, a separate
-            // panel request supplies these values instead.
-            if (!root.isMultiMode && chartRange === root.chartRange) {
-                root.panelCurrentPrice = root.currentPrice;
-                root.panelCurrentPercent = root.percentChange;
-                root.panelCurrentIsPositive = root.isPositive;
-                root.panelCurrentIsCached = false;
-            }
-
-            var now = new Date();
-            root.lastUpdated = now.toLocaleTimeString(Qt.locale(), "HH:mm");
-            var next = new Date(now.getTime() + (app.config.refreshInterval * 60000));
-            root.nextUpdate = next.toLocaleTimeString(Qt.locale(), "HH:mm");
-            root.singleDataRange = chartRange;
-            root.singleDataTicker = symbol;
-            if (!root.isMultiMode) root.showingCachedData = false;
-            root.noteQuoteReceived();
-            root.queueQuotesCacheSave();
-        } catch (e) { console.log("Error parsing single: " + e); }
-    }
-
     function processListRow(symbol, json, range) {
         var listRange = range || root.chartRange;
         // When both views use the same range, the chart can reuse this response. With a
         // chart-only range, the chart is refreshed by its own request instead.
         if (root.isMultiMode && symbol === root.panelTicker && listRange === root.effectiveChartRange) {
-            processSingleData(json, symbol, listRange);
+            singleQuote.process(json, symbol, listRange);
         }
         try {
             var result = json.chart.result[0];

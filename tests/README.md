@@ -46,6 +46,7 @@ tests/
 | `tst_text.qml` | HTML escaping for rich-text labels |
 | `tst_fxcontroller.qml` | rate cache, conversion and persistence |
 | `tst_marketcontroller.qml` | session status and extended-quote selection |
+| `tst_singlequote.qml` | chart reply to QuoteStore values (fixture) |
 
 Tests are offline: the provider parsers are fed fixture bodies, the request URLs are
 checked directly, and `NewsController` is exercised with a fake applet and the
@@ -60,6 +61,7 @@ Fixtures are real responses trimmed to the fields the parsers read:
 - `google-news-blocked.html` — the HTML page Google returns instead of a feed.
 - `bvb-issuer-tlv.html` — the BVB instrument page for TLV, reduced to the news table
   and the ASP.NET form state.
+- `yahoo-chart-sap-1d.json` — a Yahoo chart reply for SAP.DE, 1D with pre/post data.
 
 When a provider changes its payload, update the fixture and the matching test in the
 same change.
