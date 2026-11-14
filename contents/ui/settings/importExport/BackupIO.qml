@@ -89,7 +89,7 @@ Item {
     }
 
     function helperPath() {
-        return localPath(Qt.resolvedUrl("../code/backup-io.sh"));
+        return localPath(Qt.resolvedUrl("../../../code/backup-io.sh"));
     }
 
     function start(operationName, command) {
