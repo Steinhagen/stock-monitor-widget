@@ -107,7 +107,7 @@ Item {
             Layout.fillHeight: true
             Layout.minimumWidth: singleColumn.minimumContentWidth
             Layout.minimumHeight: singleColumn.minimumContentHeight
-            rootItem: applet
+            applet: fullRoot.applet
         }
 
         Item {
@@ -166,7 +166,7 @@ Item {
             Layout.fillHeight: true
             Layout.minimumWidth: listColumn.minimumContentWidth
             Layout.minimumHeight: listColumn.minimumContentHeight
-            rootItem: applet
+            applet: fullRoot.applet
             listModel: stockList
         }
     }
