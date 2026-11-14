@@ -11,13 +11,26 @@ QtObject {
     property color hostTextColor: "#ffffff"
     property color systemBackgroundColor: "#1a1a1a"
     property color hostDisabledTextColor: "#888888"
+    // The full view can live in a different window (the panel popup) with its own
+    // colour scheme. It reports that palette back so the card content follows it.
+    property color viewTextColor: "#ffffff"
+    property color viewBackgroundColor: "#1a1a1a"
+    property color viewDisabledTextColor: "#888888"
+    property bool viewPaletteSet: false
+
+    function setViewPalette(text, background, disabled) {
+        viewTextColor = text;
+        viewBackgroundColor = background;
+        viewDisabledTextColor = disabled;
+        viewPaletteSet = true;
+    }
 
     // Edit mode can hand the widget a text colour that matches the background (Plasma
     // switches the scheme for the toolbox); fall back to readable black or white.
-    readonly property color systemTextColor: readableText(hostTextColor, systemBackgroundColor)
+    readonly property color systemTextColor: readableText(viewPaletteSet ? viewTextColor : hostTextColor, surfaceBackground)
 
     // The disabled/secondary colour can come from the same mismatched palette.
-    readonly property color systemDisabledTextColor: readableSecondary(hostDisabledTextColor, systemBackgroundColor, systemTextColor)
+    readonly property color systemDisabledTextColor: readableSecondary(viewPaletteSet ? viewDisabledTextColor : hostDisabledTextColor, surfaceBackground, systemTextColor)
 
 
     // Preset: 0 = Application, 1 = Plasma. -1 is the "not migrated yet" sentinel.
@@ -32,15 +45,17 @@ QtObject {
     // Kirigami follows the Plasma color scheme, so the injected background updates when
     // the system theme changes.
     readonly property bool systemLightColors: systemBackgroundColor.hslLightness > 0.5
+    readonly property color surfaceBackground: viewPaletteSet ? viewBackgroundColor : systemBackgroundColor
+    readonly property bool surfaceLightColors: surfaceBackground.hslLightness > 0.5
     readonly property bool appLightPalette: themeColors === 0
                                             || (themeColors === 2 && systemLightColors)
     // Effective lightness of the surface on screen; the chart and the views use it for
     // their own light/dark details.
-    readonly property bool isLightTheme: usesPlasmaSurface ? systemLightColors : appLightPalette
+    readonly property bool isLightTheme: usesPlasmaSurface ? surfaceLightColors : appLightPalette
 
     // The panel indicator always uses the panel's own palette, independent of the
     // widget theme.
-    readonly property color panelTextColor: systemTextColor
+    readonly property color panelTextColor: readableText(hostTextColor, systemBackgroundColor)
     readonly property color panelPositiveColor: withContrast(config ? config.positiveColor : "#4cd964", systemBackgroundColor)
     readonly property color panelNegativeColor: withContrast(config ? config.negativeColor : "#FF3B30", systemBackgroundColor)
 
@@ -48,7 +63,7 @@ QtObject {
     // the Plasma surface. The configured gain/loss colours are adjusted only as far as
     // needed to stay readable (WCAG AA, 4.5:1).
     readonly property color contrastBackground: usesPlasmaSurface
-        ? systemBackgroundColor
+        ? surfaceBackground
         : (appLightPalette ? "#ffffff" : "#1a1a1a")
     readonly property color positiveColor: withContrast(config ? config.positiveColor : "#4cd964", contrastBackground)
     readonly property color negativeColor: withContrast(config ? config.negativeColor : "#FF3B30", contrastBackground)

@@ -48,6 +48,7 @@ PlasmoidItem {
     }
 
     readonly property var stockModel: watchlist.model
+    readonly property var theme: app.theme
 
     QuoteCacheController {
         id: quoteCache

@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import org.kde.kirigami as Kirigami
 import "list"
 
 Item {
@@ -10,6 +11,22 @@ Item {
     // Never paint card contents outside the applet background when a host gives
     // the view less than its minimum (for example a hand-resized preview window).
     clip: true
+
+    // The full view can be hosted in the panel popup, whose window has a different
+    // colour scheme than the panel. Report it so the card content follows.
+    function syncPalette() {
+        if (applet && applet.theme)
+            applet.theme.setViewPalette(Kirigami.Theme.textColor,
+                                        Kirigami.Theme.backgroundColor,
+                                        Kirigami.Theme.disabledTextColor);
+    }
+    onVisibleChanged: if (visible) syncPalette()
+    Connections {
+        target: Kirigami.Theme
+        function onTextColorChanged() { fullRoot.syncPalette(); }
+        function onBackgroundColorChanged() { fullRoot.syncPalette(); }
+        function onDisabledTextColorChanged() { fullRoot.syncPalette(); }
+    }
 
     // Desktop only: the panel uses compactRepresentation, whose size is unchanged.
     // Two columns only in multi mode with the side-by-side list.
@@ -77,6 +94,7 @@ Item {
     }
 
     Component.onCompleted: {
+        syncPalette();
         sizeReady = true;
         preferredWidth = width > 0 ? width : (twoColumns ? 960 : 600);
         preferredHeight = height > 0 ? height : 520;
