@@ -209,7 +209,6 @@ MouseArea {
     }
     Connections {
         target: applet
-        function onExtendedDataChanged() { remeasureTimer.restart(); }
         function onPanelCurrentPriceChanged() { remeasureTimer.restart(); }
         function onPanelCurrentPercentChanged() { remeasureTimer.restart(); }
         function onSingleTickerChanged() { remeasureTimer.restart(); }
@@ -219,7 +218,6 @@ MouseArea {
         function onPanelAlternateChanged() { remeasureTimer.restart(); }
         function onIsVerticalPanelChanged() { remeasureTimer.restart(); }
         function onSymbolDisplayModeChanged() { remeasureTimer.restart(); }
-        function onPanelExchangeChanged() { remeasureTimer.restart(); }
         function onSingleExchangeChanged() { remeasureTimer.restart(); }
     }
 

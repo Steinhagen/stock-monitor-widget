@@ -7,6 +7,7 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import "single"
+import "components"
 
 Rectangle {
     id: singleStockRoot
