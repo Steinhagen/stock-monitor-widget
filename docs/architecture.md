@@ -7,7 +7,7 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 ## Why this exists
 
 The widget works, but the source is still concentrated: `settings/pages/portfolio.qml`
-(1,240 lines) and `main.qml` (1,015) carry most of the remaining behaviour, while
+(1,126 lines) and `main.qml` (1,015) carry most of the remaining behaviour, while
 `SingleStockView.qml` is down to 390 lines after the Phase 4 split. That has concrete
 costs:
 
@@ -317,8 +317,9 @@ update the fixture and the parser test together.
 - [ ] **Phase 5 — settings reorganisation.** In progress: the pages moved to
       `settings/pages/` (config.qml sources updated) and the summary cards moved to
       `settings/portfolio/PortfolioTotals.qml`, and one table row to
-      `settings/portfolio/PortfolioRow.qml`. Next: the lot editor/date picker, then move
-      the backup code into `settings/importExport/`.
+      `settings/portfolio/PortfolioRow.qml`, and the purchase date picker to
+      `settings/portfolio/DatePicker.qml`. Next: the lot editor itself, then move the
+      backup code into `settings/importExport/`.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
       on every pull request (done ahead of the other phases).
 
