@@ -1,4 +1,6 @@
 .pragma library
+
+.import "../../core/Http.js" as Http
 // Issuer news for symbols traded on the Bucharest Stock Exchange (Yahoo symbols
 // ending in .RO). The instrument page server-renders the five newest announcements;
 // its "Stiri" tab is an ASP.NET postback that returns the last 60 announcements in one
@@ -168,4 +170,49 @@ function parseTop(html, symbol, limit) {
 function parseFull(html, symbol, limit) {
     var items = parseTable(html, "gv", symbol, limit);
     return items.length > 0 ? items : parseTable(html, "gv5News", symbol, limit);
+}
+
+// Provider entry point. The instrument page carries the five newest announcements; when
+// more are wanted, the "Stiri" postback is replayed for the full list. A failed POST
+// still returns the five from the GET, exactly like the page itself.
+function fetch(ctx, done) {
+    var symbol = String(ctx.symbol || "").trim();
+    var limit = Number(ctx.limit);
+    var url = detailUrl(symbol);
+    if (url === "") {
+        done([], "", {});
+        return;
+    }
+    var finished = false;
+    var finish = function(items, error) {
+        if (finished) return;
+        finished = true;
+        done(items, error, {});
+    };
+
+    Http.getText(url, { timeout: 20000 }, function(html, error) {
+        if (error) {
+            finish([], error.message);
+            return;
+        }
+        var topItems = parseTop(html, symbol, limit);
+        if (topItems.length >= limit) {
+            finish(topItems, "");
+            return;
+        }
+        var body = postBody(html);
+        if (body === "") {
+            finish(topItems, "");
+            return;
+        }
+        Http.postText(url, body, {
+            timeout: 20000,
+            headers: { "Content-Type": "application/x-www-form-urlencoded" }
+        }, function(reply, postError) {
+            var items = [];
+            if (!postError) items = parseFull(reply, symbol, limit);
+            if (items.length === 0) items = topItems;
+            finish(items, "");
+        });
+    });
 }

@@ -1,4 +1,6 @@
 .pragma library
+
+.import "../../core/Http.js" as Http
 // Latest headlines for one symbol, from the Yahoo search endpoint the symbol search in
 // the settings already uses (no cookie or crumb needed):
 //   https://query2.finance.yahoo.com/v1/finance/search?q=<query>&quotesCount=0&newsCount=<n>
@@ -103,3 +105,41 @@ function parse(data, symbol, allowBase, limit) {
     return max >= 0 ? items.slice(0, max) : items;
 }
 
+
+// Provider entry point. The ticker query keeps only items tagged with the symbol; when
+// it finds nothing, the company name is searched and the base symbol is accepted too.
+// `ctx.name` is null while the quote has not supplied it yet: the caller is told that
+// the source needs the name and retries when it is known.
+function fetch(ctx, done) {
+    var symbol = String(ctx.symbol || "").trim();
+    var limit = Number(ctx.limit);
+    var finished = false;
+    var finish = function(items, error, flags) {
+        if (finished) return;
+        finished = true;
+        done(items, error, flags || {});
+    };
+
+    var search = function(query, allowBase) {
+        Http.getJson(searchUrl(query, limit), { timeout: 20000 }, function(data, error) {
+            if (error) {
+                finish([], error.message);
+                return;
+            }
+            var items = parse(data, symbol, allowBase, limit);
+            if (items.length === 0 && !allowBase) {
+                var name = ctx.name;
+                if (name === null) {
+                    finish([], "", { needsName: true });
+                    return;
+                }
+                if (name !== "") {
+                    search(name, true);
+                    return;
+                }
+            }
+            finish(items, "");
+        });
+    };
+    search(symbol, false);
+}

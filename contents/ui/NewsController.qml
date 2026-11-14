@@ -1,8 +1,10 @@
 import QtQuick
-import "news.js" as News
 import "domain/news.js" as NewsModel
-import "bvbnews.js" as BvbNews
-import "googlenews.js" as GoogleNews
+import "core/Cache.js" as Cache
+import "providers/news/registry.js" as NewsRegistry
+import "providers/yahoo/news.js" as YahooNews
+import "providers/bvb/issuer.js" as BvbIssuer
+import "providers/google/news.js" as GoogleNews
 
 Item {
     id: newsController
@@ -14,29 +16,32 @@ Item {
 
     readonly property var entry: newsCache[newsKey(applet.singleTicker)] || null
     readonly property var items: entry ? entry.items : []
+    // At least one enabled source can serve the shown symbol. The main item uses this
+    // for the chart/news switch and to close the pane when every source is turned off.
+    readonly property bool available: applet ? NewsRegistry.hasAny(applet, applet.singleTicker || "") : false
 
     function newsKey(symbol) {
-        return String(symbol || "").trim().toUpperCase();
+        return Cache.key(symbol);
     }
 
     // Copy-on-write, so bindings on newsCache (and newsEntry) re-evaluate.
     function setNewsEntry(key, changes) {
         var old = newsCache[key];
         var entry = old ? Object.assign({}, old)
-                        : { items: [], yahooItems: [], bvbItems: [], googleItems: [],
+                        : { items: [], sourceItems: {}, sourceNeedsName: {},
                             time: 0, attempt: 0, loaded: false, error: false, pending: false,
-                            nameTried: true, googleNameTried: true, remaining: 0 };
+                            remaining: 0 };
         Object.assign(entry, changes);
         var copy = Object.assign({}, newsCache);
         copy[key] = entry;
         newsCache = copy;
     }
 
-    // Company name for the fallback query, only when it is known to belong to `symbol`.
-    // In single mode the name keeps the previous ticker's value until the new quote
-    // arrives, so it is trusted only once singleDataTicker matches. In multi mode it is
-    // taken from the selected list row. Returns null while it is still unknown, and ""
-    // when there is no name other than the ticker.
+    // Company name for the queries that need it, only when it is known to belong to
+    // `symbol`. In single mode the name keeps the previous ticker's value until the new
+    // quote arrives, so it is trusted only once singleDataTicker matches. In multi mode
+    // it is taken from the selected list row. Returns null while it is still unknown,
+    // and "" when there is no name other than the ticker.
     function newsCompanyName(symbol) {
         var sym = String(symbol || "").trim();
         if (sym === "" || newsKey(applet.singleTicker) !== newsKey(sym)) return null;
@@ -47,245 +52,64 @@ Item {
         return name;
     }
 
-    // Headlines from every provider, newest first. A link or title can appear in more
-    // than one feed (Yahoo and Google often carry the same report), so either key removes
-    // it. Each provider is already sliced to newsCount.
-    function mergeNews(yahoo, bvb, google) {
-        return NewsModel.merge(yahoo, bvb, google);
+    // Headlines from the per-source lists, newest first, in registry order. Exposed so
+    // the merge can be tested without a network request.
+    function mergeSourceItems(sourceItems) {
+        var lists = [];
+        for (var i = 0; i < NewsRegistry.SOURCES.length; i++)
+            lists.push((sourceItems || {})[NewsRegistry.SOURCES[i].id] || []);
+        return NewsModel.merge(lists);
+    }
+
+    function needsName(entry) {
+        var flags = entry ? (entry.sourceNeedsName || {}) : {};
+        for (var id in flags) {
+            if (flags[id]) return true;
+        }
+        return false;
     }
 
     // Called once for each provider. It keeps that provider's previous items when the
     // request failed, so a temporary error does not clear the list; `error` still drives
-    // the "Could not update headlines" note.
-    function finishNewsSource(key, source, items, error, nameTried) {
+    // the "Could not update headlines" note, except for an optional source that still
+    // has other headlines to show.
+    function finishNewsSource(key, source, items, error, flags) {
         var entry = newsCache[key];
         if (!entry || !entry.pending) return;
         var failed = error !== "";
-        var changes = {};
-        if (source === "yahoo") {
-            changes.yahooItems = failed ? (entry.yahooItems || []) : (items || []);
-            if (nameTried !== undefined) changes.nameTried = nameTried;
-        } else if (source === "bvb") {
-            changes.bvbItems = failed ? (entry.bvbItems || []) : (items || []);
-        } else if (source === "google") {
-            changes.googleItems = failed ? (entry.googleItems || []) : (items || []);
-            if (nameTried !== undefined) changes.googleNameTried = nameTried;
+
+        var sourceItems = Object.assign({}, entry.sourceItems || {});
+        if (failed) {
+            if (!sourceItems[source.id]) sourceItems[source.id] = [];
         } else {
-            return;
+            sourceItems[source.id] = items || [];
         }
-        changes.items = mergeNews(
-            changes.yahooItems !== undefined ? changes.yahooItems : entry.yahooItems,
-            changes.bvbItems !== undefined ? changes.bvbItems : entry.bvbItems,
-            changes.googleItems !== undefined ? changes.googleItems : entry.googleItems);
+        var sourceNeedsName = Object.assign({}, entry.sourceNeedsName || {});
+        sourceNeedsName[source.id] = !!(flags && flags.needsName);
+
+        var changes = { sourceItems: sourceItems, sourceNeedsName: sourceNeedsName };
+        changes.items = mergeSourceItems(sourceItems);
         changes.loaded = true;
-        // A failed provider normally marks the update as failed. Google News is a third,
-        // optional feed and is unreachable on some networks, so its failure is only
-        // reported when it left the list empty.
-        var hasItems = (changes.items || []).length > 0;
-        changes.error = entry.error || (failed && (source !== "google" || !hasItems));
+        var hasItems = changes.items.length > 0;
+        changes.error = entry.error || (failed && (!source.optional || !hasItems));
         if (!failed) changes.time = Date.now();
         changes.remaining = Math.max(0, (entry.remaining || 0) - 1);
         changes.pending = changes.remaining > 0;
         setNewsEntry(key, changes);
-        if (failed) console.log("News headlines (" + source + "): " + error);
+        if (failed) console.log("News headlines (" + source.id + "): " + error);
     }
 
-    // Yahoo search request. The ticker query (allowBase false) falls back to a query with
-    // the company name when Yahoo tags none of its headlines with the symbol, which is
-    // common for non-US listings (LHA.DE); that query also accepts the base symbol.
-    // The reply is stored under its own symbol even if the user has moved on.
-    function fetchYahooNews(key, symbol, query, allowBase) {
+    function fetchSource(key, symbol, source) {
         var generation = newsGeneration;
-        var done = false;
-        var finish = function(items, error, nameTried) {
-            if (done) return;
-            done = true;
+        source.fetch({
+            symbol: symbol,
+            name: newsCompanyName(symbol),
+            locale: Qt.locale().name,
+            limit: applet.newsCount
+        }, function(items, error, flags) {
             if (generation !== newsGeneration) return;
-            finishNewsSource(key, "yahoo", items, error, nameTried);
-        };
-        var search = function(text, acceptBase) {
-            var settled = false;
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState !== XMLHttpRequest.DONE || settled) return;
-                settled = true;
-                if (xhr.status !== 200) {
-                    finish([], "request failed (HTTP " + xhr.status + ")", true);
-                    return;
-                }
-                var items;
-                try {
-                    items = News.parse(JSON.parse(xhr.responseText), symbol, acceptBase, applet.newsCount);
-                } catch (e) {
-                    finish([], "could not parse the reply: " + e, true);
-                    return;
-                }
-                if (items.length === 0 && !acceptBase) {
-                    var name = newsCompanyName(symbol);
-                    if (name) {
-                        search(name, true);
-                        return;
-                    }
-                    // null: the name is not known yet; retryNewsWithName() runs it later.
-                    finish([], "", name === "");
-                    return;
-                }
-                finish(items, "", true);
-            };
-            xhr.ontimeout = function() {
-                if (settled) return;
-                settled = true;
-                finish([], "request timed out", true);
-            };
-            xhr.onerror = function() {
-                if (settled) return;
-                settled = true;
-                finish([], "request failed", true);
-            };
-            // No setRequestHeader: Yahoo answers 429 to non-browser User-Agents, and Qt
-            // already sends "Mozilla/5.0".
-            xhr.open("GET", News.searchUrl(text, applet.newsCount));
-            xhr.timeout = 20000;
-            xhr.send();
-        };
-        search(query || symbol, allowBase === true);
-    }
-
-    // BVB renders the latest five announcements in the instrument page, while the
-    // "Stiri" tab postback returns the last 60. Replay the postback for the full list;
-    // if its ASP.NET state cannot be found or the POST fails, keep the five from the GET.
-    function fetchBvbNews(key, symbol) {
-        var generation = newsGeneration;
-        var done = false;
-        var topItems = [];
-        var finish = function(items, error) {
-            if (done) return;
-            done = true;
-            if (generation !== newsGeneration) return;
-            finishNewsSource(key, "bvb", items, error, true);
-        };
-        var url = BvbNews.detailUrl(symbol);
-        if (url === "") {
-            finish([], "");
-            return;
-        }
-        var first = new XMLHttpRequest();
-        var firstSettled = false;
-        first.onreadystatechange = function() {
-            if (first.readyState !== XMLHttpRequest.DONE || firstSettled) return;
-            firstSettled = true;
-            if (first.status !== 200) {
-                finish([], "request failed (HTTP " + first.status + ")");
-                return;
-            }
-            var html = first.responseText;
-            topItems = BvbNews.parseTop(html, symbol, applet.newsCount);
-            // The page already has five; for a five-headline request that is enough.
-            if (topItems.length >= applet.newsCount) {
-                finish(topItems, "");
-                return;
-            }
-            var body = BvbNews.postBody(html);
-            if (body === "") {
-                finish(topItems, "");
-                return;
-            }
-            var second = new XMLHttpRequest();
-            var secondSettled = false;
-            second.onreadystatechange = function() {
-                if (second.readyState !== XMLHttpRequest.DONE || secondSettled) return;
-                secondSettled = true;
-                var items = [];
-                if (second.status === 200)
-                    items = BvbNews.parseFull(second.responseText, symbol, applet.newsCount);
-                if (items.length === 0) items = topItems;
-                finish(items, "");
-            };
-            second.ontimeout = function() { finish(topItems, ""); };
-            second.onerror = function() { finish(topItems, ""); };
-            second.open("POST", url);
-            second.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-            second.timeout = 20000;
-            second.send(body);
-        };
-        first.ontimeout = function() { finish([], "request timed out"); };
-        first.onerror = function() { finish([], "request failed"); };
-        first.open("GET", url);
-        first.timeout = 20000;
-        first.send();
-    }
-
-    // Google News search feed. Unlike Yahoo it has no ticker tags, so the quoted company
-    // name is the whole relevance filter; the merge step removes duplicates. The locale
-    // picks the local edition of the search (Romanian outlets for a Romanian UI).
-    function fetchGoogleNews(key, query) {
-        var generation = newsGeneration;
-        var done = false;
-        var finish = function(items, error, nameTried) {
-            if (done) return;
-            done = true;
-            if (generation !== newsGeneration) return;
-            finishNewsSource(key, "google", items, error, nameTried);
-        };
-        var url = GoogleNews.feedUrl(query, Qt.locale().name);
-        if (url === "") {
-            finish([], "", true);
-            return;
-        }
-        var xhr = new XMLHttpRequest();
-        var settled = false;
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState !== XMLHttpRequest.DONE || settled) return;
-            settled = true;
-            if (xhr.status !== 200) {
-                finish([], "request failed (HTTP " + xhr.status + ")", true);
-                return;
-            }
-            // A redirect (an unsupported edition, or Google's rate limit) lands on an
-            // HTML page instead of the RSS body. Treat that as a failure, not as "no
-            // headlines", so the next interval tries again.
-            var body = String(xhr.responseText || "");
-            if (body.indexOf("<rss") < 0) {
-                finish([], "unexpected reply", true);
-                return;
-            }
-            var items;
-            try {
-                items = GoogleNews.parse(body, applet.newsCount);
-            } catch (e) {
-                finish([], "could not parse the reply: " + e, true);
-                return;
-            }
-            finish(items, "", true);
-        };
-        xhr.ontimeout = function() {
-            if (settled) return;
-            settled = true;
-            finish([], "request timed out", true);
-        };
-        xhr.onerror = function() {
-            if (settled) return;
-            settled = true;
-            finish([], "request failed", true);
-        };
-        xhr.open("GET", url);
-        xhr.timeout = 20000;
-        xhr.send();
-    }
-
-    // The Google query needs the company name, so it waits for the quote when the name
-    // is still unknown (nameTried false) and is retried by retryNewsWithName().
-    function startGoogleNews(key, symbol) {
-        var name = newsCompanyName(symbol);
-        if (name === null) {
-            finishNewsSource(key, "google", [], "", false);
-            return;
-        }
-        if (name === "") {
-            finishNewsSource(key, "google", [], "", true);
-            return;
-        }
-        fetchGoogleNews(key, name);
+            finishNewsSource(key, source, items, error, flags);
+        });
     }
 
     // Fetches the headlines for `symbol` unless they are fresh. `force` (the refresh
@@ -299,28 +123,23 @@ Item {
         var now = Date.now();
         if (entry && entry.pending) return;
         if (!force && entry) {
-            if (entry.loaded && !entry.error && now - entry.time < applet.newsRefreshMinutes * 60000) {
-                if (entry.nameTried === false || entry.googleNameTried === false) retryNewsWithName();
+            if (Cache.isFresh(entry, applet.newsRefreshMinutes * 60000, now)) {
+                if (needsName(entry)) retryNewsWithName();
                 return;
             }
             // Do not hammer the feeds after a failure; the next try comes with the
             // interval, the next time the pane opens, or the refresh button.
-            if (now - entry.attempt < 60000) return;
+            if (Cache.isThrottled(entry, 60000, now)) return;
         }
-        var wantsYahoo = applet.newsSourceYahoo;
-        var wantsBvb = applet.newsSourceBvb && BvbNews.baseSymbol(sym) !== "";
-        var wantsGoogle = applet.newsSourceGoogle;
-        var remaining = (wantsYahoo ? 1 : 0) + (wantsBvb ? 1 : 0) + (wantsGoogle ? 1 : 0);
-        if (remaining === 0) return;
-        setNewsEntry(key, { pending: true, remaining: remaining,
-                                 attempt: now, error: false });
-        if (wantsYahoo) fetchYahooNews(key, sym, sym, false);
-        if (wantsBvb) fetchBvbNews(key, sym);
-        if (wantsGoogle) startGoogleNews(key, sym);
+        var sources = NewsRegistry.enabledSources(applet, sym);
+        if (sources.length === 0) return;
+        setNewsEntry(key, { pending: true, remaining: sources.length,
+                            attempt: now, error: false, sourceNeedsName: {} });
+        for (var i = 0; i < sources.length; i++) fetchSource(key, sym, sources[i]);
     }
 
-    // Runs the company-name queries for the shown symbol when the first attempt found
-    // nothing before the name was known. Yahoo and Google are retried independently.
+    // Runs the sources that were waiting for the company name once the quote has
+    // supplied it. Sources whose name query already ran are left alone.
     function retryNewsWithName() {
         if (!applet.newsPaneShown) return;
         var sym = applet.singleTicker.trim();
@@ -330,34 +149,40 @@ Item {
         if (!entry || !entry.loaded || entry.pending) return;
         var name = newsCompanyName(sym);
         if (name === null) return;
-        var retryYahoo = applet.newsSourceYahoo && entry.nameTried === false
-                         && (entry.yahooItems || []).length === 0;
-        var retryGoogle = applet.newsSourceGoogle && entry.googleNameTried === false
-                          && (entry.googleItems || []).length === 0;
-        if (!retryYahoo && !retryGoogle) return;
+
+        var retry = [];
+        var sources = NewsRegistry.enabledSources(applet, sym);
+        for (var i = 0; i < sources.length; i++) {
+            var source = sources[i];
+            var items = (entry.sourceItems || {})[source.id] || [];
+            if ((entry.sourceNeedsName || {})[source.id] === true && items.length === 0)
+                retry.push(source);
+        }
+        if (retry.length === 0) return;
+
         if (name === "") {
-            setNewsEntry(key, { nameTried: true, googleNameTried: true });
+            var cleared = Object.assign({}, entry.sourceNeedsName || {});
+            for (var j = 0; j < retry.length; j++) cleared[retry[j].id] = false;
+            setNewsEntry(key, { sourceNeedsName: cleared });
             return;
         }
-        setNewsEntry(key, { pending: true,
-                            remaining: (retryYahoo ? 1 : 0) + (retryGoogle ? 1 : 0),
+        setNewsEntry(key, { pending: true, remaining: retry.length,
                             attempt: Date.now(), error: false });
-        if (retryYahoo) fetchYahooNews(key, sym, name, true);
-        if (retryGoogle) fetchGoogleNews(key, name);
+        for (var k = 0; k < retry.length; k++) fetchSource(key, sym, retry[k]);
     }
 
     function openNewsLink(url) {
-        Qt.openUrlExternally(News.safeLink(url, applet.singleTicker));
+        Qt.openUrlExternally(YahooNews.safeLink(url, applet.singleTicker));
     }
 
     function openYahooNews(symbol) {
         var clean = symbol ? String(symbol).trim() : "";
         if (clean === "") return;
-        Qt.openUrlExternally(News.newsPageUrl(clean));
+        Qt.openUrlExternally(YahooNews.newsPageUrl(clean));
     }
 
     function openBvbNews(symbol) {
-        var url = BvbNews.detailUrl(symbol);
+        var url = BvbIssuer.detailUrl(symbol);
         if (url !== "") Qt.openUrlExternally(url);
     }
 
@@ -409,7 +234,6 @@ Item {
         triggeredOnStart: true
         onTriggered: requestNews(applet.singleTicker, false)
     }
-
 
     // The source selection changes what a cached entry can contain, so drop it. If the
     // current symbol has no remaining source, close the News pane and hide its icons.

@@ -1,7 +1,7 @@
 import QtQuick
 import QtTest
 import "Fixture.js" as Fixture
-import "../../contents/ui/bvbnews.js" as BvbNews
+import "../../contents/ui/providers/bvb/issuer.js" as BvbNews
 
 TestCase {
     name: "BvbNews"

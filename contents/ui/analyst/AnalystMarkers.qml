@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import "analyst.js" as Analyst
+import "../domain/analysts.js" as Analyst
 
 // Analyst price-target markers overlaid on the chart. The component owns the geometry,
 // the marker shapes and the details popup; SingleStockView only places it over the

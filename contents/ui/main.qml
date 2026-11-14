@@ -12,11 +12,9 @@ import "domain/exchanges.js" as Exchanges
 import "domain/symbols.js" as Symbols
 import "domain/format.js" as Format
 import "domain/sessions.js" as Sessions
-import "domain/quotes.js" as Quotes
-import "domain/news.js" as NewsModel
 import "analyst"
-import "news.js" as News
-import "bvbnews.js" as BvbNews
+import "providers/yahoo/chart.js" as YahooChart
+import "providers/fx/rates.js" as FxRates
 
 PlasmoidItem {
     id: root
@@ -448,7 +446,6 @@ PlasmoidItem {
     property double exchangeRatesUpdated: Number(Plasmoid.configuration.exchangeRatesUpdated) || 0
     property double exchangeRatesNext: Number(Plasmoid.configuration.exchangeRatesNext) || 0
     property bool exchangeRatesFetching: false
-    property bool exchangeRatesTryingFallback: false
 
     // Converts an amount between currencies through the cached daily rates. Returns null
     // when a rate is not known yet, so callers can tell "no rate" apart from a real zero.
@@ -467,7 +464,6 @@ PlasmoidItem {
 
     function finishExchangeRates(error) {
         root.exchangeRatesFetching = false;
-        root.exchangeRatesTryingFallback = false;
         if (error) console.log("Exchange rates: " + error);
     }
 
@@ -495,66 +491,20 @@ PlasmoidItem {
             return false;
         }
         root.exchangeRatesFetching = false;
-        root.exchangeRatesTryingFallback = false;
         return true;
-    }
-
-    // Secondary feed, used when open.er-api.com cannot be reached. It returns the same
-    // shape of data (all currencies, relative to USD) under a lowercase "usd" object.
-    function fetchExchangeRatesFallback() {
-        if (!root.exchangeRatesFetching || root.exchangeRatesTryingFallback) return;
-        root.exchangeRatesTryingFallback = true;
-        var now = Math.floor(Date.now() / 1000);
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState !== XMLHttpRequest.DONE) return;
-            var ok = false;
-            if (xhr.status === 200) {
-                try {
-                    var data = JSON.parse(xhr.responseText);
-                    if (data && data.usd && root.saveExchangeRates("USD", data.usd, now, now + 86400))
-                        ok = true;
-                } catch (e) {
-                    console.log("Error parsing fallback exchange rates: " + e);
-                }
-            }
-            if (!ok) root.finishExchangeRates("no exchange-rate feed available");
-        };
-        xhr.ontimeout = function() { root.finishExchangeRates("exchange-rate request timed out"); };
-        xhr.onerror = function() { root.finishExchangeRates("exchange-rate request failed"); };
-        xhr.open("GET", "https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json");
-        xhr.timeout = 20000;
-        xhr.send();
     }
 
     function fetchExchangeRates() {
         if (root.exchangeRatesFetching) return;
         root.exchangeRatesFetching = true;
-        root.exchangeRatesTryingFallback = false;
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState !== XMLHttpRequest.DONE) return;
-            if (xhr.status === 200) {
-                try {
-                    var data = JSON.parse(xhr.responseText);
-                    var now = Math.floor(Date.now() / 1000);
-                    if (data && data.result === "success" && data.rates) {
-                        var updated = Number(data.time_last_update_unix) || now;
-                        var next = Number(data.time_next_update_unix) || (updated + 86400);
-                        if (root.saveExchangeRates(data.base_code || "USD", data.rates, updated, next))
-                            return;
-                    }
-                } catch (e) {
-                    console.log("Error parsing exchange rates: " + e);
-                }
+        FxRates.fetch(function(rates, error) {
+            if (error) {
+                root.finishExchangeRates(error);
+                return;
             }
-            root.fetchExchangeRatesFallback();
-        };
-        xhr.ontimeout = function() { root.fetchExchangeRatesFallback(); };
-        xhr.onerror = function() { root.fetchExchangeRatesFallback(); };
-        xhr.open("GET", "https://open.er-api.com/v6/latest/USD");
-        xhr.timeout = 20000;
-        xhr.send();
+            if (!root.saveExchangeRates(rates.base, rates.rates, rates.updated, rates.next))
+                root.finishExchangeRates("no exchange-rate feed available");
+        });
     }
 
     function maybeRefreshExchangeRates() {
@@ -574,13 +524,11 @@ PlasmoidItem {
     property bool panelPopupShown: false
     readonly property bool fullViewShown: !root.inPanel || root.expanded || root.panelPopupShown
     // The News pane exists only when the feature is on and at least one source can
-    // provide something for the shown symbol (BVB only covers Romanian listings).
+    // provide something for the shown symbol; the controller's registry decides that
+    // (BVB only covers Romanian listings, for example).
     readonly property bool newsAvailable: root.showNews
                                           && root.singleTicker.trim() !== ""
-                                          && (root.newsSourceYahoo
-                                              || root.newsSourceGoogle
-                                              || (root.newsSourceBvb
-                                                  && BvbNews.baseSymbol(root.singleTicker) !== ""))
+                                          && newsController.available
     // The single-stock view is not shown in the list-only multi-stock view.
     readonly property bool newsPaneShown: root.newsAvailable && root.singleViewPane === "news"
                                           && root.fullViewShown && (!root.isMultiMode || root.showTwoList)
@@ -862,11 +810,6 @@ PlasmoidItem {
         if (root.mouseDoubleClickAction === "open") root.openYahooQuote(symbol);
     }
 
-    // --- NEW HELPER: GET API PARAMETERS BASED ON CONFIG ---
-    function getApiParams(range) {
-        return Quotes.apiParams(range, root.showExtendedHours);
-    }
-
     // --- PRE-MARKET / AFTER-MARKET ---
     // Latest pre-market or after-hours quote per requested symbol, as
     // { label, time, price, change, pct, isPos }. Only the quote from the session
@@ -1082,15 +1025,9 @@ PlasmoidItem {
     }
 
     function fetchExtendedHours(symbol) {
-        var xhr = new XMLHttpRequest();
-        var url = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?range=1d&interval=5m&includePrePost=true";
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE && xhr.status === 200) {
-                processExtendedData(symbol, JSON.parse(xhr.responseText));
-            }
-        }
-        xhr.open("GET", url);
-        xhr.send();
+        YahooChart.getExtended(symbol, function(response, error) {
+            if (!error) processExtendedData(symbol, response);
+        });
     }
 
     function refreshExtendedHours() {
@@ -1489,40 +1426,23 @@ PlasmoidItem {
 
     function fetchSingleStock(symbol, range) {
         var chartRange = range || root.effectiveChartRange;
-        var xhr = new XMLHttpRequest();
-        var url = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?" + getApiParams(chartRange);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState !== XMLHttpRequest.DONE) return;
-            if (xhr.status !== 200) { root.scheduleQuoteRetry(); return; }
+        YahooChart.get(symbol, chartRange, root.showExtendedHours, function(response, error) {
+            if (error) { root.scheduleQuoteRetry(); return; }
             // Ignore a reply for a range or symbol the user has already switched away from.
             if (chartRange !== root.effectiveChartRange || symbol !== root.singleTicker) return;
-            var response = JSON.parse(xhr.responseText);
             processSingleData(response, symbol, chartRange);
-        };
-        xhr.onerror = function() { root.scheduleQuoteRetry(); };
-        xhr.ontimeout = function() { root.scheduleQuoteRetry(); };
-        xhr.open("GET", url);
-        xhr.timeout = 20000;
-        xhr.send();
+        });
     }
 
     // Quote for the compact panel indicator, fetched separately when the chart uses a
     // range of its own. The panel always follows the configured data range.
     function fetchPanelStock(symbol) {
         var range = root.chartRange;
-        var xhr = new XMLHttpRequest();
-        var url = "https://query1.finance.yahoo.com/v8/finance/chart/" + symbol + "?" + getApiParams(range);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState !== XMLHttpRequest.DONE) return;
-            if (xhr.status !== 200) { root.scheduleQuoteRetry(); return; }
+        YahooChart.get(symbol, range, root.showExtendedHours, function(response, error) {
+            if (error) { root.scheduleQuoteRetry(); return; }
             if (range !== root.chartRange || symbol !== root.panelSymbol) return;
-            processPanelData(JSON.parse(xhr.responseText), symbol, range);
-        };
-        xhr.onerror = function() { root.scheduleQuoteRetry(); };
-        xhr.ontimeout = function() { root.scheduleQuoteRetry(); };
-        xhr.open("GET", url);
-        xhr.timeout = 20000;
-        xhr.send();
+            processPanelData(response, symbol, range);
+        });
     }
 
     // The configured watchlist, cleaned and in display order.
@@ -1590,21 +1510,12 @@ PlasmoidItem {
         root.applyCachedQuotesToRows();
 
         targetTickers.forEach(function(cleanSymbol) {
-            var xhr = new XMLHttpRequest();
-            var url = "https://query1.finance.yahoo.com/v8/finance/chart/" + cleanSymbol + "?" + getApiParams(range);
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState !== XMLHttpRequest.DONE) return;
-                if (xhr.status !== 200) { root.scheduleQuoteRetry(); return; }
+            YahooChart.get(cleanSymbol, range, root.showExtendedHours, function(response, error) {
+                if (error) { root.scheduleQuoteRetry(); return; }
                 // Ignore a reply for a range the user has already switched away from.
                 if (range !== root.chartRange) return;
-                var response = JSON.parse(xhr.responseText);
                 processListRow(cleanSymbol, response, range);
-            };
-            xhr.onerror = function() { root.scheduleQuoteRetry(); };
-            xhr.ontimeout = function() { root.scheduleQuoteRetry(); };
-            xhr.open("GET", url);
-            xhr.timeout = 20000;
-            xhr.send();
+            });
         });
     }
 

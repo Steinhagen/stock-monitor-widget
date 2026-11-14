@@ -1,4 +1,6 @@
 .pragma library
+
+.import "../../core/Http.js" as Http
 // Headlines from a Google News search, as an extra provider next to Yahoo Finance and
 // BVB. Google publishes an RSS 2.0 feed for any news search, with no key or cookie:
 //   https://news.google.com/rss/search?q=<query>&hl=<lang>&gl=<country>&ceid=<country>:<lang>
@@ -151,4 +153,41 @@ function parse(text, limit) {
     items.sort(function (a, b) { return (b.time || 0) - (a.time || 0); });
     var max = Number(limit);
     return max >= 0 ? items.slice(0, max) : items;
+}
+
+// Provider entry point. The query needs the company name, so a null name (the quote has
+// not supplied it yet) is reported as `needsName` and retried by the caller. A reply
+// that is not RSS (a redirect, or Google's rate limit) is an error, not "no headlines".
+function fetch(ctx, done) {
+    if (ctx.name === null) {
+        done([], "", { needsName: true });
+        return;
+    }
+    if (ctx.name === "") {
+        done([], "", {});
+        return;
+    }
+    var url = feedUrl(ctx.name, ctx.locale);
+    if (url === "") {
+        done([], "", {});
+        return;
+    }
+    Http.getText(url, { timeout: 20000 }, function(body, error) {
+        if (error) {
+            done([], error.message, {});
+            return;
+        }
+        if (String(body).indexOf("<rss") < 0) {
+            done([], "unexpected reply", {});
+            return;
+        }
+        var items;
+        try {
+            items = parse(body, ctx.limit);
+        } catch (e) {
+            done([], "could not parse the reply: " + e, {});
+            return;
+        }
+        done(items, "", {});
+    });
 }

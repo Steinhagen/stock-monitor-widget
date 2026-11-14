@@ -4,6 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Window
 import org.kde.kirigami as Kirigami
 import "window.js" as ConfigWindow
+import "../providers/yahoo/search.js" as YahooSearch
 
 Item {
     id: page
@@ -36,38 +37,22 @@ Item {
         searchHelpText.text = i18n("Searching...");
         resultsModel.clear();
         
-        var xhr = new XMLHttpRequest();
-        var url = "https://query2.finance.yahoo.com/v1/finance/search?q=" + encodeURIComponent(query);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState === XMLHttpRequest.DONE) {
-                if (xhr.status === 200) {
-                    try {
-                        var res = JSON.parse(xhr.responseText);
-                        var results = res.quotes || [];
-                        if (results.length === 0) {
-                            searchHelpText.text = i18n("No symbols found.");
-                            return;
-                        }
-                        searchHelpText.text = i18n("Suggestions:");
-                        for (var i = 0; i < Math.min(results.length, 10); i++) {
-                            var item = results[i];
-                            if (item.symbol) {
-                                resultsModel.append({
-                                    "symbol": item.symbol,
-                                    "name": item.shortname || item.longname || item.symbol
-                                });
-                            }
-                        }
-                    } catch (e) {
-                        searchHelpText.text = i18n("Error parsing search results.");
-                    }
-                } else {
-                    searchHelpText.text = i18n("Search failed (HTTP %1).", xhr.status);
-                }
+        YahooSearch.search(query.trim(), function(results, error) {
+            if (error) {
+                searchHelpText.text = error.code === "parse"
+                    ? i18n("Error parsing search results.")
+                    : (error.status > 0 ? i18n("Search failed (HTTP %1).", error.status)
+                                        : i18n("Search failed."));
+                return;
             }
-        }
-        xhr.open("GET", url);
-        xhr.send();
+            if (results.length === 0) {
+                searchHelpText.text = i18n("No symbols found.");
+                return;
+            }
+            searchHelpText.text = i18n("Suggestions:");
+            for (var i = 0; i < Math.min(results.length, 10); i++)
+                resultsModel.append(results[i]);
+        });
     }
 
     ScrollView {

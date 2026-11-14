@@ -876,20 +876,24 @@ msgid "Searching..."
 msgstr "Se caută..."
 
 #: contents/ui/config/symbolsLists.qml
-msgid "No symbols found."
-msgstr "Nu s-au găsit simboluri."
-
-#: contents/ui/config/symbolsLists.qml
-msgid "Suggestions:"
-msgstr "Sugestii:"
-
-#: contents/ui/config/symbolsLists.qml
 msgid "Error parsing search results."
 msgstr "Eroare la interpretarea rezultatelor căutării."
 
 #: contents/ui/config/symbolsLists.qml
 msgid "Search failed (HTTP %1)."
 msgstr "Căutarea a eșuat (HTTP %1)."
+
+#: contents/ui/config/symbolsLists.qml
+msgid "Search failed."
+msgstr "Căutarea a eșuat."
+
+#: contents/ui/config/symbolsLists.qml
+msgid "No symbols found."
+msgstr "Nu s-au găsit simboluri."
+
+#: contents/ui/config/symbolsLists.qml
+msgid "Suggestions:"
+msgstr "Sugestii:"
 
 #: contents/ui/config/symbolsLists.qml
 msgid "Lists"

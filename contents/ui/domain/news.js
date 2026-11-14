@@ -5,8 +5,8 @@
 
 // Merge the lists of the providers, newest first. A link or title can appear in more
 // than one feed (Yahoo and Google often carry the same report), so either key removes
-// it; the first provider in the argument order keeps its copy.
-function merge(yahoo, bvb, google) {
+// it; the first list in the order keeps its copy.
+function merge(lists) {
     var merged = [];
     var seen = {};
     var add = function(items) {
@@ -22,9 +22,8 @@ function merge(yahoo, bvb, google) {
             merged.push(item);
         }
     };
-    add(yahoo || []);
-    add(bvb || []);
-    add(google || []);
+    lists = lists || [];
+    for (var l = 0; l < lists.length; l++) add(lists[l] || []);
     merged.sort(function(a, b) { return (Number(b.time) || 0) - (Number(a.time) || 0); });
     return merged;
 }

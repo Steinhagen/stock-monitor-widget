@@ -37,10 +37,15 @@ tests/
 | `tst_format.qml` | number and money formatting |
 | `tst_sessions.qml` | market status, closed state, first-quote wait |
 | `tst_quotes.qml` | chart range to API parameters |
-| `tst_news_controller.qml` | the controller delegates to the news model |
+| `tst_yahoo_chart.qml` | Yahoo chart and extended-hours URLs |
+| `tst_yahoo_search.qml` | symbol search URL and result parsing |
+| `tst_cache.qml` | cache key, freshness and back-off rules |
+| `tst_registry.qml` | enabled news sources, BVB coverage, optional source |
+| `tst_news_controller.qml` | the controller merges the per-source lists |
 
-Tests are offline: providers are called with fixture bodies, and the controller test
-only exercises pure merging in `NewsController`.
+Tests are offline: the provider parsers are fed fixture bodies, the request URLs are
+checked directly, and `NewsController` is exercised with a fake applet and the
+per-source lists. The network clients themselves run only in the widget.
 
 ## Fixtures
 
@@ -58,7 +63,7 @@ same change.
 ## Adding a test
 
 1. Import the module by relative path:
-   `import "../../contents/ui/news.js" as News`.
+   `import "../../contents/ui/providers/yahoo/news.js" as News`.
 2. For fixtures: `Fixture.read(Qt.resolvedUrl("../fixtures/file.json"))`.
 3. Keep each test deterministic — no network, no timers, no clock-dependent values
    (pass the `now` argument where the module supports it).

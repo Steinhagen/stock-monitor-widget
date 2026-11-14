@@ -1,7 +1,7 @@
 import QtQuick
 import QtTest
 import "Fixture.js" as Fixture
-import "../../contents/ui/googlenews.js" as GoogleNews
+import "../../contents/ui/providers/google/news.js" as GoogleNews
 
 TestCase {
     name: "GoogleNews"

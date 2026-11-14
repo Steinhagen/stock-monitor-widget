@@ -17,7 +17,7 @@ TestCase {
             { title: "Newest", link: "https://d", source: "Google", time: 30 },
             { title: "Older", link: "https://e", source: "Google", time: 1 }
         ];
-        var merged = NewsModel.merge(yahoo, bvb, google);
+        var merged = NewsModel.merge([yahoo, bvb, google]);
         compare(merged.length, 3);
         compare(merged[0].title, "Newest");
         compare(merged[1].title, "Same story");
@@ -26,8 +26,8 @@ TestCase {
     }
 
     function test_mergeEmpty() {
-        compare(NewsModel.merge().length, 0);
-        compare(NewsModel.merge(null, undefined, []).length, 0);
+        compare(NewsModel.merge([]).length, 0);
+        compare(NewsModel.merge([null, undefined, []]).length, 0);
     }
 
     function test_age() {

@@ -7,7 +7,7 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 ## Why this exists
 
 The widget works, but three files still carry most of the behaviour: `main.qml`
-(2,304 lines, ~90 functions), `SingleStockView.qml` (2,231) and
+(2,215 lines, ~85 functions), `SingleStockView.qml` (2,231) and
 `config/portfolio.qml` (1,478) — together about half of the source tree. That has
 concrete costs:
 
@@ -74,12 +74,12 @@ contents/
     │   │   ├── chart.js                # v8/chart
     │   │   ├── search.js               # v1/search: symbols, company name, news
     │   │   ├── quoteSummary.js         # cookie/crumb flow for analyst data
-    │   │   └── newsParse.js            # relatedTickers filter, entity decode
+    │   │   ├── news.js                 # search headlines, relatedTickers filter
+    │   │   └── search.js               # symbol search for the settings page
     │   ├── bvb/
-    │   │   ├── issuerPage.js           # instrument page + "Stiri" postback
-    │   │   └── issuerParse.js          # HTML table -> items
+    │   │   └── issuer.js               # instrument page, announcements, postback
     │   ├── google/news.js              # RSS search: query, locale, parse, filters
-    │   ├── fx/frankfurter.js           # daily ECB rates (or the current feed)
+    │   ├── fx/rates.js                   # daily rates, primary + fallback feed
     │   └── news/
     │       ├── registry.js             # descriptors: id, label, supports(), fetch()
     │       ├── yahooSource.js
@@ -245,8 +245,8 @@ the rows above describe where the remaining files will go.
 | `chartcurve.js` | `domain/curve.js` |
 | `portfolio.js` | `domain/portfolio.js` |
 | `currencies.js`, `exchanges.js` | `domain/currencies.js`, `domain/exchanges.js`, `domain/symbols.js` |
-| `news.js` | `domain/news.js` + `providers/yahoo/newsParse.js` |
-| `bvbnews.js` | `providers/bvb/issuerPage.js`, `issuerParse.js`, `providers/news/bvbSource.js` |
+| `news.js` | `providers/yahoo/news.js` + `domain/news.js` |
+| `bvbnews.js` | `providers/bvb/issuer.js` + `providers/news/bvbSource.js` |
 | `googlenews.js` | `providers/google/news.js` + `providers/news/googleSource.js` |
 | `NewsController.qml` | `controllers/NewsController.qml` + `state/NewsStore.qml` |
 | `analyst/*` | `providers/yahoo/quoteSummary.js`, `domain/analysts.js`, `controllers/AnalystController.qml`, `ui/single/AnalystOverlay.qml` |
@@ -277,9 +277,10 @@ the rows above describe where the remaining files will go.
 ```
 
 Covered today: currencies (minor units/conversion), exchange labels, number/money and
-symbol formatting, market sessions, chart API parameters, Yahoo news parsing, Google
-news parsing, BVB announcement parsing, backup format, chart-data and candle helpers,
-and the news merge in the domain layer. Provider and controller tests take
+symbol formatting, market sessions, chart API parameters, Yahoo news and symbol search
+parsing, Google news parsing, BVB announcement parsing, backup format, chart-data and
+candle helpers, cache rules, the news registry, and the per-source merge in
+`NewsController`. Provider and controller tests take
 fixtures or injected data, so they stay deterministic.
 
 Fixtures are trimmed captures of real responses; when a provider changes its payload,
@@ -294,8 +295,11 @@ update the fixture and the parser test together.
       `contents/ui/domain/`, with tests. `main.qml` keeps thin wrappers with the old
       names so the views did not change; those wrappers go away with the controllers
       in Phase 3.
-- [ ] **Phase 2 — core + providers.** `core/Http`, `core/Cache`; Yahoo/BVB/Google
-      clients behind provider modules; news registry.
+- [x] **Phase 2 — core + providers.** `core/Http` and `core/Cache` now hold the
+      request and freshness rules. Yahoo (chart, search, quoteSummary, news), BVB and
+      Google live under `providers/`, and `NewsController` drives them through a
+      registry: adding a source is a descriptor plus one registry entry. `main.qml`
+      uses the Yahoo chart and FX providers for every request it makes.
 - [ ] **Phase 3 — controllers and stores.** Split `main.qml`; introduce `AppConfig`,
       `AppActions`, `App.qml`; `main.qml` becomes composition.
 - [ ] **Phase 4 — view decomposition.** Split `SingleStockView`; extract shared

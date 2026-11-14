@@ -872,19 +872,23 @@ msgid "Searching..."
 msgstr ""
 
 #: contents/ui/config/symbolsLists.qml
-msgid "No symbols found."
-msgstr ""
-
-#: contents/ui/config/symbolsLists.qml
-msgid "Suggestions:"
-msgstr ""
-
-#: contents/ui/config/symbolsLists.qml
 msgid "Error parsing search results."
 msgstr ""
 
 #: contents/ui/config/symbolsLists.qml
 msgid "Search failed (HTTP %1)."
+msgstr ""
+
+#: contents/ui/config/symbolsLists.qml
+msgid "Search failed."
+msgstr ""
+
+#: contents/ui/config/symbolsLists.qml
+msgid "No symbols found."
+msgstr ""
+
+#: contents/ui/config/symbolsLists.qml
+msgid "Suggestions:"
 msgstr ""
 
 #: contents/ui/config/symbolsLists.qml
