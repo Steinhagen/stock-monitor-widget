@@ -1,6 +1,6 @@
 import QtQuick
 import QtTest
-import "../../contents/ui/backup.js" as Backup
+import "../../contents/ui/settings/importExport/backupFormat.js" as Backup
 
 TestCase {
     name: "Backup"

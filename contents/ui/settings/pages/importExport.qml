@@ -1,12 +1,12 @@
 import QtQuick
 import QtQuick.Controls
-import QtQuick.Dialogs as QtDialogs
 import QtQuick.Layouts
 import QtQuick.Window
 import Qt.labs.platform as QLP
 import org.kde.kirigami as Kirigami
-import "../../backup.js" as Backup
+import "../importExport/backupFormat.js" as Backup
 import "window.js" as ConfigWindow
+import "../importExport"
 
 Item {
     id: page
@@ -331,21 +331,14 @@ Item {
                         text: i18n("Export to File...")
                         icon.name: "document-save-as"
                         enabled: page.ioAvailable && !page.busy
-                        onClicked: {
-                            exportDialog.currentFolder = page.defaultFolder;
-                            exportDialog.selectedFile = page.defaultFileUrl();
-                            exportDialog.open();
-                        }
+                        onClicked: fileDialogs.openExport()
                     }
 
                     Button {
                         text: i18n("Import from File...")
                         icon.name: "document-open"
                         enabled: page.ioAvailable && !page.busy
-                        onClicked: {
-                            importDialog.currentFolder = page.defaultFolder;
-                            importDialog.open();
-                        }
+                        onClicked: fileDialogs.openImport()
                     }
 
                     BusyIndicator {
@@ -393,7 +386,7 @@ Item {
 
     Loader {
         id: ioLoader
-        source: "../../BackupIO.qml"
+        source: "../importExport/BackupIO.qml"
         asynchronous: false
     }
 
@@ -413,26 +406,11 @@ Item {
         }
     }
 
-    QtDialogs.FileDialog {
-        id: exportDialog
-        title: i18n("Export Settings")
-        fileMode: QtDialogs.FileDialog.SaveFile
-        nameFilters: [
-            i18nc("file filter", "JSON backup files (*.json)"),
-            i18nc("file filter", "All files (*)")
-        ]
-        defaultSuffix: "json"
-        onAccepted: page.exportTo(exportDialog.selectedFile)
-    }
-
-    QtDialogs.FileDialog {
-        id: importDialog
-        title: i18n("Import Settings")
-        fileMode: QtDialogs.FileDialog.OpenFile
-        nameFilters: [
-            i18nc("file filter", "JSON backup files (*.json)"),
-            i18nc("file filter", "All files (*)")
-        ]
-        onAccepted: page.importFrom(importDialog.selectedFile)
+    FileDialogs {
+        id: fileDialogs
+        defaultFolder: page.defaultFolder
+        defaultFile: page.defaultFileUrl()
+        onExportRequested: function(fileUrl) { page.exportTo(fileUrl); }
+        onImportRequested: function(fileUrl) { page.importFrom(fileUrl); }
     }
 }

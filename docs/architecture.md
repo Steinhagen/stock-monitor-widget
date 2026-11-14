@@ -319,8 +319,9 @@ update the fixture and the parser test together.
       `settings/portfolio/PortfolioTotals.qml`, and one table row to
       `settings/portfolio/PortfolioRow.qml`, and the purchase date picker to
       `settings/portfolio/DatePicker.qml`, and the add/edit form to
-      `settings/portfolio/LotEditor.qml`. Next: move the backup code into
-      `settings/importExport/` and split that page.
+      `settings/portfolio/LotEditor.qml`. The backup format (`backupFormat.js`), the IO
+      wrapper and the file dialogs now live in `settings/importExport/`. Next: move the
+      remaining settings helpers and `PositionLine.qml` into their target folders.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
       on every pull request (done ahead of the other phases).
 
