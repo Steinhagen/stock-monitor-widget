@@ -1,5 +1,6 @@
 import QtQuick
 import "../controllers"
+import "../platform"
 
 // Non-visual composition of the widget: the typed configuration and the controllers
 // that do not belong to a single view. main.qml creates this once and binds its own
@@ -9,10 +10,22 @@ Item {
     visible: false
 
     property var configuration: null
+    // Host palette, passed by main.qml from Kirigami.
+    property color systemTextColor: "#ffffff"
+    property color systemBackgroundColor: "#1a1a1a"
+    property color systemDisabledTextColor: "#888888"
 
     AppConfig {
         id: configObject
         configuration: app.configuration
+    }
+
+    Theme {
+        id: themeObject
+        config: configObject
+        systemTextColor: app.systemTextColor
+        systemBackgroundColor: app.systemBackgroundColor
+        systemDisabledTextColor: app.systemDisabledTextColor
     }
 
     FxController {
@@ -29,6 +42,7 @@ Item {
     }
 
     readonly property AppConfig config: configObject
+    readonly property Theme theme: themeObject
     readonly property FxController fx: fxController
     readonly property MarketController market: marketController
 }

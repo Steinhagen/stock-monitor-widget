@@ -116,4 +116,37 @@ QtObject {
     // Cached quotes (raw JSON string, parsed by the quote cache)
     readonly property string cachedQuotes: text("cachedQuotes", "")
     readonly property string cachedQuotesTime: text("cachedQuotesTime", "")
+
+    // One-time rewrite of the old single Light/Dark/Plasma choice. Every new entry
+    // defaults to -1 ("not migrated yet"), so a real value is what a previous run or the
+    // settings dialog wrote; that makes the migration idempotent.
+    function migrateThemeSettings() {
+        if (!configuration) return;
+        var c = configuration;
+        // The Custom preset was removed: keep the background its desktop used.
+        if (c.themePreset === 2) {
+            c.themePreset = c.desktopThemeSource === 1 ? 1 : 0;
+        }
+        if (c.themePreset >= 0 && c.themeColors >= 0) return;
+        try {
+            var legacy = Number(c.selectedTheme);
+            var preset = 1;
+            var colors = 2;
+            if (legacy === 0) {
+                preset = 0;
+                colors = 0;
+            } else if (legacy === 1) {
+                preset = 0;
+                colors = 1;
+            } else if (legacy === 2) {
+                preset = 1;
+            }
+            // legacy === -1 means the old setting was never saved: use the new
+            // defaults, Plasma with System colors.
+            if (c.themePreset < 0) c.themePreset = preset;
+            if (c.themeColors < 0) c.themeColors = colors;
+        } catch (e) {
+            console.log("Error migrating theme settings: " + e);
+        }
+    }
 }

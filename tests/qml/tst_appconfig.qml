@@ -12,6 +12,10 @@ TestCase {
         property int symbolDisplayMode: 9
         property string mouseRowLeftAction: ""
         property bool showExtendedHours: false
+        property int themePreset: -1
+        property int themeColors: -1
+        property int selectedTheme: 1
+        property int desktopThemeSource: -1
         property string multiTickers: ""
     }
 
@@ -44,6 +48,17 @@ TestCase {
         compare(config.showExtendedHours, false);
         // An intentionally emptied ticker list stays empty.
         compare(config.multiTickers, "");
+    }
+
+    function test_migrateLegacyTheme() {
+        var config = make(fake);
+        compare(fake.themePreset, -1);
+        config.migrateThemeSettings();
+        compare(fake.themePreset, 0);
+        compare(fake.themeColors, 1);
+        // A second run is a no-op.
+        config.migrateThemeSettings();
+        compare(fake.themePreset, 0);
     }
 
     function test_reactive() {

@@ -20,6 +20,9 @@ PlasmoidItem {
     App {
         id: app
         configuration: Plasmoid.configuration
+        systemTextColor: Kirigami.Theme.textColor
+        systemBackgroundColor: Kirigami.Theme.backgroundColor
+        systemDisabledTextColor: Kirigami.Theme.disabledTextColor
     }
 
     QuoteStore {
@@ -233,82 +236,31 @@ PlasmoidItem {
     property alias panelCurrentIsPositive: quoteStore.panelCurrentIsPositive
     readonly property string panelSymbol: root.isMultiMode ? root.panelTicker : root.singleTicker
     // --- THEME ---
-    // The background has two independent choices: a preset that applies to both the
-    // desktop and the panel, or a per-context source under Custom. The colors are a
-    // separate choice so the cards the widget draws always have a readable palette.
-    //
-    // Preset: 0 = Application, 1 = Plasma. Fresh placements default to Plasma;
-    // -1 is only the "not migrated yet" sentinel.
-    readonly property int themePreset: app.config.themePreset === 0 ? 0 : 1
-    // Colors: 0 = Light, 1 = Dark, 2 = System. They apply to the Application preset;
-    // Plasma always follows the system colors.
-    readonly property int themeColors: app.config.themeColors === 0 ? 0
-                                      : (app.config.themeColors === 1 ? 1 : 2)
+    // The colour system lives in platform/Theme.qml; the applet passes the system palette
+    // in and exposes the result under the names the views already use.
+    readonly property int themePreset: app.theme.themePreset
+    readonly property int themeColors: app.theme.themeColors
     readonly property bool inPanel: Plasmoid.formFactor === PlasmaCore.Types.Horizontal
                                     || Plasmoid.formFactor === PlasmaCore.Types.Vertical
-    // Plasma follows the system background and colors; Application draws its own cards.
-    readonly property bool usesPlasmaSurface: themePreset === 1
-    readonly property bool appDrawnSurface: themePreset === 0
-    // Light/dark detection for the Application System color choice. Kirigami follows
-    // the Plasma color scheme, so this updates when the system theme changes.
-    readonly property bool systemLightColors: Kirigami.Theme.backgroundColor.hslLightness > 0.5
-    readonly property bool appLightPalette: themeColors === 0 || (themeColors === 2 && systemLightColors)
-    // Effective lightness of the surface currently on screen. The chart and the views
-    // use it for their own light/dark details.
-    property bool isLightTheme: root.usesPlasmaSurface ? root.systemLightColors : root.appLightPalette
-    // The panel indicator always uses the panel's own palette, independent of the
-    // widget theme, so it looks the same whichever background/colors are selected.
-    readonly property color panelTextColor: Kirigami.Theme.textColor
-    readonly property color panelPositiveColor: root.withContrast(app.config.positiveColor, Kirigami.Theme.backgroundColor)
-    readonly property color panelNegativeColor: root.withContrast(app.config.negativeColor, Kirigami.Theme.backgroundColor)
-    // A vertical panel constrains the applet to the panel thickness, so the compact
-    // view has to fit (and elide) inside that width instead of using the content width.
+    readonly property bool usesPlasmaSurface: app.theme.usesPlasmaSurface
+    readonly property bool appDrawnSurface: app.theme.appDrawnSurface
+    readonly property bool systemLightColors: app.theme.systemLightColors
+    readonly property bool appLightPalette: app.theme.appLightPalette
+    readonly property bool isLightTheme: app.theme.isLightTheme
+    readonly property color panelTextColor: app.theme.panelTextColor
+    readonly property color panelPositiveColor: app.theme.panelPositiveColor
+    readonly property color panelNegativeColor: app.theme.panelNegativeColor
+    // A vertical panel constrains the applet to the panel thickness.
     readonly property bool isVerticalPanel: Plasmoid.formFactor === PlasmaCore.Types.Vertical
-    // Colour the gain/loss text is measured against: the base colour of the widget's
-    // own cards, otherwise the Plasma surface.
-    property color contrastBackground: root.usesPlasmaSurface
-        ? Kirigami.Theme.backgroundColor
-        : (root.appLightPalette ? "#ffffff" : "#1a1a1a")
-    // The configured gain/loss colours, adjusted only as far as needed to stay readable
-    // (WCAG AA, 4.5:1) on that background. The default green is bright enough for the
-    // dark theme but washes out on white, so it is darkened in the light theme.
-    property color positiveColor: root.withContrast(app.config.positiveColor, root.contrastBackground)
-    property color negativeColor: root.withContrast(app.config.negativeColor, root.contrastBackground)
+    readonly property color contrastBackground: app.theme.contrastBackground
+    readonly property color positiveColor: app.theme.positiveColor
+    readonly property color negativeColor: app.theme.negativeColor
+    readonly property color tickerColor: app.theme.tickerColor
+    readonly property int tickerOpacity: app.theme.tickerOpacity
+    readonly property color priceColor: app.theme.priceColor
+    readonly property int priceOpacity: app.theme.priceOpacity
+    readonly property int bgOpacity: app.theme.bgOpacity
 
-    // WCAG relative luminance of a colour and the contrast ratio between two colours.
-    function luminance(c) {
-        function channel(v) { return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); }
-        return 0.2126 * channel(c.r) + 0.7152 * channel(c.g) + 0.0722 * channel(c.b);
-    }
-    function contrastRatio(a, b) {
-        var la = luminance(a), lb = luminance(b);
-        return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
-    }
-
-    // Returns the colour unchanged when it already reads well on bg. Otherwise keeps the hue
-    // and saturation and moves only the lightness (darker on light backgrounds, lighter on dark
-    // ones) until the contrast is enough.
-    function withContrast(color, bg) {
-        var c = Qt.color(color);
-        var b = Qt.color(bg);
-        if (contrastRatio(c, b) >= 4.5) return c;
-        var darken = luminance(b) > 0.18;
-        var hue = c.hslHue < 0 ? 0 : c.hslHue;
-        var l = c.hslLightness;
-        var out = c;
-        for (var i = 0; i < 100; i++) {
-            l += darken ? -0.01 : 0.01;
-            if (l < 0 || l > 1) break;
-            out = Qt.hsla(hue, c.hslSaturation, l, 1);
-            if (contrastRatio(out, b) >= 4.5) break;
-        }
-        return out;
-    }
-    property color tickerColor: getThemeColor("ticker")
-    property int tickerOpacity: app.config.tickerOpacity
-    property color priceColor: getThemeColor("price")
-    property int priceOpacity: app.config.priceOpacity
-    property int bgOpacity: app.config.bgOpacity
     property bool hideChangePercentage: app.config.hideChangePercentage
     property bool hideTimestamps: app.config.hideTimestamps
     property bool formatPrices: app.config.formatPrices
@@ -388,77 +340,13 @@ PlasmoidItem {
         : (root.lastUpdated !== "" && root.nextUpdate !== ""
            ? i18n("Updated: %1 • Next: %2", root.lastUpdated, root.nextUpdate) : "")
     // Amber that stays readable on light and dark cards, used while data is cached.
-    readonly property color warningTextColor: root.isLightTheme ? "#8a5a00" : "#e0b25a"
-    property color bgColor: getThemeColor("background")
-    property color chartBaseColor: getThemeColor("chart")
-    property color secondaryTextColor: getThemeColor("text")
-
-    function getThemeColor(what) {
-        if (what === "ticker") {
-            if (root.usesPlasmaSurface)
-                return Kirigami.Theme.textColor;
-
-            return Qt.colorEqual(app.config.tickerColor, "#ffffff") && root.appLightPalette ? "#000000" : app.config.tickerColor;
-        } else if (what === "price") {
-            if (root.usesPlasmaSurface)
-                return Kirigami.Theme.textColor;
-
-            return Qt.colorEqual(app.config.priceColor, "#ffffff") && root.appLightPalette ? "#000000" : app.config.priceColor;
-        } else if (what === "background") {
-            // Plasma paints the surface behind the views, or the full view draws the
-            // single forced light/dark Plasma-style surface instead.
-            if (root.usesPlasmaSurface)
-                return "transparent";
-
-            const c = Qt.color(root.appLightPalette ? "#ffffff" : "#1a1a1a");
-            return Qt.rgba(c.r, c.g, c.b, root.bgOpacity / 100);
-        } else if (what === "chart") {
-            if (root.usesPlasmaSurface)
-                return Kirigami.Theme.disabledTextColor;
-            return root.appLightPalette ? "#e0e0e0" : "#333333";
-        } else if (what === "text") {
-            if (root.usesPlasmaSurface)
-                return Kirigami.Theme.disabledTextColor;
-            return root.appLightPalette ? "#555555" : "#888888";
-        }
-        return "";
-    }
-
-    // Rewrites the old single Light/Dark/Plasma choice as the new preset and colors.
-    // Every new entry defaults to -1 ("not migrated yet"), so a real value is what a
-    // previous run or the settings dialog wrote. That makes the migration idempotent
-    // and keeps a theme picked in the settings page from being overwritten.
-    function migrateThemeSettings() {
-        var c = Plasmoid.configuration;
-        // The Custom preset was removed: keep the background its desktop used.
-        if (c.themePreset === 2) {
-            c.themePreset = c.desktopThemeSource === 1 ? 1 : 0;
-        }
-        if (c.themePreset >= 0 && c.themeColors >= 0) return;
-        try {
-            var legacy = Number(c.selectedTheme);
-            var preset = 1;
-            var colors = 2;
-            if (legacy === 0) {
-                preset = 0;
-                colors = 0;
-            } else if (legacy === 1) {
-                preset = 0;
-                colors = 1;
-            } else if (legacy === 2) {
-                preset = 1;
-            }
-            // legacy === -1 means the old setting was never saved: use the new
-            // defaults, Plasma with System colors.
-            if (c.themePreset < 0) c.themePreset = preset;
-            if (c.themeColors < 0) c.themeColors = colors;
-        } catch (e) {
-            console.log("Error migrating theme settings: " + e);
-        }
-    }
+    readonly property color warningTextColor: app.theme.warningTextColor
+    readonly property color bgColor: app.theme.bgColor
+    readonly property color chartBaseColor: app.theme.chartBaseColor
+    readonly property color secondaryTextColor: app.theme.secondaryTextColor
 
     Component.onCompleted: {
-        root.migrateThemeSettings();
+        app.config.migrateThemeSettings();
         // Before the startup timer sends its first request, so the placeholders are
         // replaced by the previous values while the network comes up.
         root.readCachedQuotes();

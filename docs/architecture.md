@@ -7,7 +7,7 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 ## Why this exists
 
 The widget works, but three files still carry most of the behaviour: `main.qml`
-(1,127 lines, ~30 functions), `SingleStockView.qml` (2,231) and
+(1,015 lines, ~25 functions), `SingleStockView.qml` (2,231) and
 `config/portfolio.qml` (1,478) — together about half of the source tree. That has
 concrete costs:
 
@@ -305,8 +305,10 @@ update the fixture and the parser test together.
       the FX, market, refresh, quote, watchlist and cache controllers are in, and
       `main.qml` keeps the public names the views use. It is down to about 1,127 lines;
       the remaining bulk is the theme, the tooltip and the two view compositions.
-- [ ] **Phase 4 — view decomposition.** Split `SingleStockView`; extract shared
-      components; `Theme`; remove `rootItem.*` from components.
+- [ ] **Phase 4 — view decomposition.** In progress: the colour system moved to
+      `platform/Theme.qml` (system palette injected, WCAG helpers tested) and the theme
+      migration to `AppConfig`. Next: split `SingleStockView` into header, quote, chart
+      and news, extract the shared components and remove the `rootItem.*` reach-through.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the
       portfolio page, move backup into `settings/importExport/`.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
