@@ -28,7 +28,6 @@ Item {
     // Edit/Remove still address the original lot.
     property var filteredLots: []
     property string lotSearch: ""
-    property string formError: ""
     property var quoteData: ({})
     property bool quotesLoading: false
     property int quoteRequestsPending: 0
@@ -204,7 +203,6 @@ Item {
     property int editingIndex: -1
 
     // Purchase date of the lot in the form. Today unless another day is picked.
-    property var purchaseDate: new Date()
 
     // Stored at local noon so the calendar day survives the UTC conversion of
     // toISOString() in any time zone.
@@ -213,39 +211,32 @@ Item {
     }
 
     function clearForm() {
-        portfolioTickerField.text = "";
-        portfolioSharesSpin.value = 0;
-        portfolioCostField.text = "";
-        lotCurrencyCombo.currentIndex = 0; // USD
-        portfolioDetailsField.text = "";
-        page.purchaseDate = new Date();
+        lotEditor.reset();
         page.editingIndex = -1;
-        page.formError = "";
     }
 
     // Opens the empty add-lot dialog.
     function openAddLot() {
         page.clearForm();
-        page.formError = "";
-        lotDialog.open();
+        lotEditor.open();
     }
 
     function addLot() {
-        if (portfolioTickerField.text.trim() === "" || portfolioSharesSpin.value <= 0) {
-            page.formError = i18n("Enter a ticker and a number of shares greater than zero.");
+        if (lotEditor.ticker.trim() === "" || lotEditor.shares <= 0) {
+            lotEditor.formError = i18n("Enter a ticker and a number of shares greater than zero.");
             return;
         }
-        page.formError = "";
+        lotEditor.formError = "";
         var portfolio = page.safeParsePortfolio(page.cfg_portfolioData);
         var lot = {
-            ticker: portfolioTickerField.text.trim().toUpperCase(),
-            shares: portfolioSharesSpin.value,
-            averageCost: page.parseLocaleNumber(portfolioCostField.text) || 0,
-            currency: page.currencyCodeAt(lotCurrencyCombo.currentIndex),
-            addedDate: page.dateToIso(page.purchaseDate)
+            ticker: lotEditor.ticker.trim().toUpperCase(),
+            shares: lotEditor.shares,
+            averageCost: page.parseLocaleNumber(lotEditor.costText) || 0,
+            currency: page.currencyCodeAt(lotEditor.currencyIndex),
+            addedDate: page.dateToIso(lotEditor.purchaseDate)
         };
         // Optional free text, e.g. which broker/account the shares are held at.
-        var details = portfolioDetailsField.text.trim();
+        var details = lotEditor.details.trim();
         if (details !== "") lot.details = details;
         if (page.editingIndex >= 0 && page.editingIndex < portfolio.length) {
             portfolio[page.editingIndex] = lot;
@@ -255,22 +246,16 @@ Item {
         page.cfg_portfolioData = JSON.stringify(portfolio);
         page.refreshPortfolioList();
         page.clearForm();
-        lotDialog.close();
+        lotEditor.close();
     }
 
     // Loads a lot (by its position in portfolioList) into the form so it can be changed.
     function editLot(index) {
         var lot = page.portfolioList[index];
         if (!lot) return;
-        portfolioTickerField.text = lot.ticker;
-        portfolioSharesSpin.value = Number(lot.shares) || 0;
-        portfolioCostField.text = String(Number(lot.averageCost) || 0);
-        lotCurrencyCombo.currentIndex = page.currencyIndex(lot.currency || "USD");
-        page.purchaseDate = lot.addedDate ? new Date(lot.addedDate) : new Date();
-        portfolioDetailsField.text = lot.details || "";
+        lotEditor.load(lot, page.currencyIndex(lot.currency || "USD"));
         page.editingIndex = index;
-        page.formError = "";
-        lotDialog.open();
+        lotEditor.open();
     }
 
     // Removes a single lot by its position in portfolioList (not by ticker, since a ticker
@@ -961,102 +946,12 @@ Item {
     // ----------------------------------------------------------------------
     // Add / edit lot dialog. The table stays the primary surface.
     // ----------------------------------------------------------------------
-    Dialog {
-        id: lotDialog
-        title: page.editingIndex >= 0 ? i18n("Edit Lot") : i18n("Add Lot")
-        modal: true
-        width: Math.max(360, Math.min(540, page.width - Kirigami.Units.largeSpacing * 2))
-        closePolicy: Popup.CloseOnEscape
-        onClosed: page.clearForm()
-
-        contentItem: ColumnLayout {
-            spacing: Kirigami.Units.largeSpacing
-
-            Kirigami.FormLayout {
-                Layout.fillWidth: true
-
-                TextField {
-                    id: portfolioTickerField
-                    Kirigami.FormData.label: i18n("Ticker:")
-                    placeholderText: i18n("e.g., AAPL")
-                    Layout.fillWidth: true
-                }
-
-                SpinBox {
-                    id: portfolioSharesSpin
-                    Kirigami.FormData.label: i18n("Shares:")
-                    from: 0
-                    to: 999999
-                    editable: true
-                }
-
-                TextField {
-                    id: portfolioCostField
-                    Kirigami.FormData.label: i18n("Average Cost:")
-                    placeholderText: "0.00"
-                    validator: RegularExpressionValidator { regularExpression: /^\d*[.,]?\d*$/ }
-                    Layout.fillWidth: true
-                }
-
-                ComboBox {
-                    id: lotCurrencyCombo
-                    Kirigami.FormData.label: i18n("Currency:")
-                    model: Currency.LABELS
-                    currentIndex: 0
-                    Layout.preferredWidth: Kirigami.Units.gridUnit * 18
-                }
-
-                Button {
-                    id: purchaseDateButton
-                    Kirigami.FormData.label: i18n("Purchase Date:")
-                    icon.name: "view-calendar"
-                    text: Qt.formatDate(page.purchaseDate, "dd MMM yyyy")
-                    onClicked: datePopup.open()
-
-                    DatePicker {
-                        id: datePopup
-                        y: purchaseDateButton.height + Kirigami.Units.smallSpacing
-                        selectedDate: page.purchaseDate
-                        onPicked: function(chosen) { page.purchaseDate = chosen; }
-                    }
-                }
-
-                TextField {
-                    id: portfolioDetailsField
-                    Kirigami.FormData.label: i18n("Details (optional):")
-                    placeholderText: i18n("e.g., E*TRADE - 8122")
-                    Layout.fillWidth: true
-                }
-            }
-
-            Label {
-                Layout.fillWidth: true
-                visible: page.formError !== ""
-                text: page.formError
-                color: Kirigami.Theme.negativeTextColor
-                wrapMode: Text.WordWrap
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-
-                Item { Layout.fillWidth: true }
-
-                Button {
-                    text: i18n("Cancel")
-                    onClicked: {
-                        page.clearForm();
-                        lotDialog.close();
-                    }
-                }
-
-                Button {
-                    text: page.editingIndex >= 0 ? i18n("Save Lot") : i18n("Add Lot")
-                    highlighted: true
-                    onClicked: page.addLot()
-                }
-            }
-        }
+    LotEditor {
+        id: lotEditor
+        availableWidth: page.width
+        editing: page.editingIndex >= 0
+        onDismissed: page.editingIndex = -1
+        onSaveRequested: page.addLot()
     }
 
     // ----------------------------------------------------------------------
