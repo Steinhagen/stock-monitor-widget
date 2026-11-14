@@ -32,5 +32,9 @@ jobs:
             qml6-module-qtquick \
             qml6-module-qttest
 
+      - name: Lint the QML sources
+        run: |
+          PATH="/usr/lib/qt6/bin:$PATH" ./tests/lint.sh
+
       - name: Run the harness
         run: ./tests/run.sh

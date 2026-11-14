@@ -10,7 +10,7 @@ Item {
     property var market
 
     // Tests create the controller with this off so the startup trigger does not fire.
-    property bool enabled: true
+    property bool active: true
 
     function refreshExtended() {
         if (!applet.showExtendedHours) return;
@@ -58,7 +58,7 @@ Item {
 
     Timer {
         interval: Math.max(1, applet.refreshIntervalMinutes) * 60000
-        running: refresh.enabled
+        running: refresh.active
         repeat: true
         triggeredOnStart: true
         onTriggered: refresh.checkTime()

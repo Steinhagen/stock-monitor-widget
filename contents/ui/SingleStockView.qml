@@ -258,7 +258,6 @@ Rectangle {
                 host: singleStockRoot
                 newsPane: newsPane
             }
-            }
             Item {
                 id: chartArea
                 Layout.fillWidth: true

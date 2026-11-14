@@ -43,7 +43,7 @@ TestCase {
         var component = Qt.createComponent(Qt.resolvedUrl("../../contents/ui/controllers/RefreshController.qml"));
         compare(component.status, Component.Ready, component.errorString());
         var refresh = component.createObject(this, {
-            "applet": applet, "market": market, "enabled": false
+            "applet": applet, "market": market, "active": false
         });
         verify(refresh !== null);
         return { market: market, refresh: refresh };

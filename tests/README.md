@@ -3,7 +3,8 @@
 QML unit and controller tests for the widget, run with `qmltestrunner`.
 
 ```
-./tests/run.sh
+./tests/run.sh      # component tests
+./tests/lint.sh     # QML syntax gate (also run in CI)
 ```
 
 The script exports `QML_XHR_ALLOW_FILE_READ=1` (the fixture loader reads local files
@@ -13,7 +14,8 @@ with `XMLHttpRequest`) and runs with the offscreen platform, so no display is ne
 
 ```
 tests/
-├── run.sh                  # the only entry point
+├── run.sh                  # component tests
+├── lint.sh                 # QML syntax check
 ├── qml/
 │   ├── Fixture.js          # read(url) helper for fixtures
 │   └── tst_*.qml           # one TestCase per module
