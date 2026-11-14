@@ -347,7 +347,7 @@ Item {
             // the parts by width cannot loop.
             Layout.minimumWidth: 0
             Layout.preferredWidth: 0
-            rootItem: rowRoot.applet
+            applet: rowRoot.applet
             summary: rowRoot.rowSummary
             sym: rowRoot.rowCurrencySym
         }

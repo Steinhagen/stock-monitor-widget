@@ -12,7 +12,7 @@ import org.kde.kirigami as Kirigami
 Item {
     id: line
 
-    property var rootItem
+    property var applet
     // The position, as returned by getPortfolioSummary() (or the same fields for a total).
     property var summary: null
     // Fallback symbol when the summary does not carry its own currency.
@@ -32,8 +32,8 @@ Item {
     // or the portfolio currency for mixed positions and totals), so use that symbol first.
     // `sym` is already a symbol, so it is used as-is when the summary has no currency.
     readonly property string moneySymbol: {
-        if (!rootItem) return "";
-        if (summary && summary.currency) return rootItem.getCurrencySymbol(summary.currency);
+        if (!applet) return "";
+        if (summary && summary.currency) return applet.getCurrencySymbol(summary.currency);
         return sym;
     }
 
@@ -44,8 +44,8 @@ Item {
 
     readonly property bool dayAvailable: summary !== null && summary !== undefined
                                          && summary.dayValue !== null && summary.dayValue !== undefined
-    readonly property color plColor: summary && summary.plIsPos ? rootItem.positiveColor : rootItem.negativeColor
-    readonly property color dayColor: summary && summary.dayIsPos ? rootItem.positiveColor : rootItem.negativeColor
+    readonly property color plColor: summary && summary.plIsPos ? applet.positiveColor : applet.negativeColor
+    readonly property color dayColor: summary && summary.dayIsPos ? applet.positiveColor : applet.negativeColor
 
     readonly property string heldString: {
         if (heldOverride !== "") return heldOverride;
@@ -55,9 +55,9 @@ Item {
         var withLots = summary.lots > 1
                        ? i18n("%1 (%2)", shares, i18np("%1 lot", "%1 lots", summary.lots))
                        : String(shares);
-        return i18n("%1 @ %2", withLots, rootItem.formatMoney(moneySymbol, summary.avgCost, false));
+        return i18n("%1 @ %2", withLots, applet.formatMoney(moneySymbol, summary.avgCost, false));
     }
-    readonly property string plPercentString: summary ? rootItem.formatNumber(summary.plPercent, true) + "%" : ""
+    readonly property string plPercentString: summary ? applet.formatNumber(summary.plPercent, true) + "%" : ""
 
     // Width of each part. They come from the texts' own implicit widths, which do not depend on
     // what is shown, so choosing the parts by width cannot loop.
@@ -95,7 +95,7 @@ Item {
             id: heldText
             visible: line.level === 0 && line.heldString !== ""
             text: line.heldString
-            color: rootItem.secondaryTextColor
+            color: applet.secondaryTextColor
             font.pixelSize: line.fontSize
         }
 
@@ -106,13 +106,13 @@ Item {
             Text {
                 id: valueCaption
                 text: i18n("Value")
-                color: rootItem.secondaryTextColor
+                color: applet.secondaryTextColor
                 font.pixelSize: line.fontSize
             }
             Text {
                 id: valueText
-                text: line.summary ? rootItem.formatMoney(line.moneySymbol, line.summary.value, false) : ""
-                color: rootItem.priceColor
+                text: line.summary ? applet.formatMoney(line.moneySymbol, line.summary.value, false) : ""
+                color: applet.priceColor
                 font.pixelSize: line.fontSize
                 font.bold: true
             }
@@ -125,7 +125,7 @@ Item {
                 id: plCaption
                 visible: line.level <= 2
                 text: i18n("P/L")
-                color: rootItem.secondaryTextColor
+                color: applet.secondaryTextColor
                 font.pixelSize: line.fontSize
             }
             Rectangle {
@@ -140,7 +140,7 @@ Item {
                     id: plFullText
                     anchors.centerIn: parent
                     visible: line.level <= 2
-                    text: line.summary ? rootItem.formatMoney(line.moneySymbol, line.summary.plValue, true) + " (" + line.plPercentString + ")" : ""
+                    text: line.summary ? applet.formatMoney(line.moneySymbol, line.summary.plValue, true) + " (" + line.plPercentString + ")" : ""
                     color: line.plColor
                     font.pixelSize: line.fontSize
                     font.weight: Font.Bold
@@ -163,13 +163,13 @@ Item {
             spacing: line.captionGap
             Text {
                 id: dayCaption
-                text: line.periodLabel !== "" ? line.periodLabel : rootItem.portfolioChangeLabel
-                color: rootItem.secondaryTextColor
+                text: line.periodLabel !== "" ? line.periodLabel : applet.portfolioChangeLabel
+                color: applet.secondaryTextColor
                 font.pixelSize: line.fontSize
             }
             Text {
                 id: dayText
-                text: line.dayAvailable ? rootItem.formatMoney(line.moneySymbol, line.summary.dayValue, true) : ""
+                text: line.dayAvailable ? applet.formatMoney(line.moneySymbol, line.summary.dayValue, true) : ""
                 color: line.dayColor
                 font.pixelSize: line.fontSize
                 font.bold: true

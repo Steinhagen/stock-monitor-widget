@@ -6,20 +6,28 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 
 ## Why this exists
 
-The widget works, but the source is still concentrated: `settings/pages/portfolio.qml`
-(962 lines) and `main.qml` (1,015) carry most of the remaining behaviour, while
-`SingleStockView.qml` is down to 390 lines after the Phase 4 split. That has concrete
-costs:
+The widget works, and the refactor has moved the domain, providers, controllers,
+theme and most views out of the applet. Two files still hold the remaining
+concentration: `main.qml` (1,017 lines: applet wiring, the tooltip and the two
+representations) and `settings/pages/portfolio.qml` (962: quote fetching, totals
+and layout). `SingleStockView.qml` is 389 and composes header, quote, chart and
+news components.
 
-- `main.qml` mixes configuration, theming, formatting, network I/O, market sessions,
-  chart-data assembly, quote caching and view wiring. Almost every feature edits it.
-- Views reach through `rootItem` for colours, formatting and actions, so a view cannot
-  be reused or rendered without the whole applet.
-- News providers are hardcoded inside `NewsController`; adding a source means editing
-  the controller again.
-- Timeouts, generation tokens, caching and error handling are re-implemented per
+The pressures that drove the split:
+
+- `main.qml` mixed configuration, theming, formatting, network I/O, market
+  sessions, chart-data assembly, quote caching and view wiring.
+- Views reached through `rootItem` for colours, formatting and actions, so a view
+  could not be used without the whole applet.
+- News providers were hardcoded inside `NewsController`, so adding a source meant
+  editing the controller.
+- Timeouts, generation tokens, caching and error handling were re-implemented per
   feature.
-- Domain logic lives in QML files that need a Plasma context, so it cannot be tested.
+- Domain logic lived in QML files that need a Plasma context, so it could not be
+  tested.
+
+Those are now solved by the layers below; the two files above are the remaining
+places where a new feature can still touch unrelated code.
 
 ## Principles
 
@@ -303,29 +311,18 @@ update the fixture and the parser test together.
       uses the Yahoo chart and FX providers for every request it makes.
 - [x] **Phase 3 — controllers and stores.** `AppConfig`, `AppActions`, `App`, `QuoteStore`,
       the FX, market, refresh, quote, watchlist and cache controllers are in, and
-      `main.qml` keeps the public names the views use. It is down to about 1,015 lines;
+      `main.qml` keeps the public names the views use. It is down to about 1,017 lines;
       the remaining bulk is the tooltip and the two view compositions.
-- [ ] **Phase 4 — view decomposition.** In progress. Moved so far: the colour system
-      to `platform/Theme.qml` (system palette injected, WCAG helpers tested), the theme
-      migration to `AppConfig`, the news list to `ui/single/NewsPane.qml`, the chart to
-      `ui/single/ChartCanvas.qml`, the header to `ui/single/StockHeader.qml`, the quote
-      rows to `ui/single/QuoteBlock.qml` and the controls above the chart to
-      `ui/single/ChartControls.qml`. The shared components in `ui/components/` now back
-      the range, style and news-source buttons (`PillButton`), the tooltip icon buttons
-      (`IconAction`) and the quote price/change labels (`PriceText`, `ChangeText`). Next:
-      the remaining `rootItem.*` reach-through in the other views.
-- [ ] **Phase 5 — settings reorganisation.** In progress: the pages moved to
-      `settings/pages/` (config.qml sources updated) and the summary cards moved to
-      `settings/portfolio/PortfolioTotals.qml`, and one table row to
-      `settings/portfolio/PortfolioRow.qml`, and the purchase date picker to
-      `settings/portfolio/DatePicker.qml`, and the add/edit form to
-      `settings/portfolio/LotEditor.qml`. The backup format (`backupFormat.js`), the IO
-      wrapper and the file dialogs live in `settings/importExport/`; `window.js` is now
-      `settings/components/SettingsWindow.js` and `PositionLine.qml` is in
-      `ui/components/`. The tree matches the target; the portfolio page still holds its
-      data logic (now with the parsing/filtering/sorting moved to
-      `settings/portfolio/portfolioModel.js` and covered by tests). The remaining views are in
-      their target folders too (`ui/list`, `ui/panel`, `ui/tooltip`).
+- [x] **Phase 4 — view decomposition.** `SingleStockView` composes the header, quote,
+      chart, controls, news and analyst overlay; the watchlist row is a component; the
+      drawing is in `ChartCanvas`; shared widgets live in `ui/components/`; the colour
+      system is `platform/Theme.qml`; and every view takes `applet` instead of reaching
+      through `rootItem`.
+- [ ] **Phase 5 — settings reorganisation.** Pages in `settings/pages/`, the portfolio
+      widgets and pure model in `settings/portfolio/`, the backup format, IO wrapper and
+      file dialogs in `settings/importExport/`, and `SettingsWindow.js` in
+      `settings/components/`. The tree matches the target; the remaining item is the
+      portfolio page's quote/totals logic.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
       on every pull request (done ahead of the other phases).
 

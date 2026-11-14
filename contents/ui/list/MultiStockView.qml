@@ -153,7 +153,7 @@ Rectangle {
                     anchors.left: parent.left
                     anchors.right: parent.right
                     anchors.verticalCenter: parent.verticalCenter
-                    rootItem: multiStockRoot.applet
+                    applet: multiStockRoot.applet
                     summary: multiStockRoot.totals
                     sym: multiStockRoot.totalsSym
                     heldOverride: multiStockRoot.totalsLabel

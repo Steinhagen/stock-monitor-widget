@@ -11,7 +11,7 @@ import "single"
 Rectangle {
     id: singleStockRoot
 
-    property var rootItem
+    property var applet
 
     // Hover crosshair state for the chart. Coordinates are local to the chart canvas.
     property bool chartHoverActive: false
@@ -22,16 +22,16 @@ Rectangle {
     property bool analystMarkersShown: false
 
     // Background of the selected Chart/News icon, the same tint as a selected chart button.
-    readonly property color selectedTint: Qt.rgba(rootItem.tickerColor.r, rootItem.tickerColor.g, rootItem.tickerColor.b, 0.14)
+    readonly property color selectedTint: Qt.rgba(applet.tickerColor.r, applet.tickerColor.g, applet.tickerColor.b, 0.14)
     // News pane: the headlines replace the chart; the cache and the fetch live in main.qml.
-    readonly property bool newsMode: rootItem.newsAvailable && rootItem.singleViewPane === "news"
-    readonly property var newsEntry: rootItem.newsEntry
+    readonly property bool newsMode: applet.newsAvailable && applet.singleViewPane === "news"
+    readonly property var newsEntry: applet.newsEntry
     // Distinct sources among the shown headlines, in the order their newest item appears.
     // Other providers (BVB, for example) will add their label to the items they return.
     readonly property var newsSources: {
         var seen = {};
         var sources = [];
-        var items = rootItem.newsItems;
+        var items = applet.newsItems;
         for (var i = 0; i < items.length; i++) {
             var source = String(items[i].source || "").trim();
             if (source === "" || seen[source]) continue;
@@ -60,7 +60,7 @@ Rectangle {
     // Yahoo. Falls back to the first provider, then Yahoo.
     readonly property string newsMoreSource: {
         if (newsSourceFilter !== "") return newsSourceFilter;
-        var items = rootItem.newsItems;
+        var items = applet.newsItems;
         if (items.length > 0) {
             var source = String(items[0].source || "").trim();
             if (source !== "") return source;
@@ -68,7 +68,7 @@ Rectangle {
         return newsSources.length > 0 ? newsSources[0] : "Yahoo";
     }
     readonly property var newsFilteredItems: {
-        var items = rootItem.newsItems;
+        var items = applet.newsItems;
         if (newsSourceFilter === "") return items;
         var filtered = [];
         for (var i = 0; i < items.length; i++) {
@@ -91,26 +91,26 @@ Rectangle {
         if (!newsEntry || newsEntry.pending || (!newsEntry.loaded && !newsEntry.error))
             return i18n("Loading headlines…");
         if (newsEntry.error) return i18n("Headlines unavailable");
-        return i18n("No recent headlines for %1", rootItem.displayTicker(rootItem.singleTicker));
+        return i18n("No recent headlines for %1", applet.displayTicker(applet.singleTicker));
     }
     // A failed update keeps the headlines that are already shown and says so here.
     readonly property bool newsHeaderWarning: newsEntry !== null && newsEntry.error && newsHasItems
     readonly property string newsHeaderText: {
         if (newsHeaderWarning) return i18n("Could not update headlines");
         if (newsEntry && newsEntry.loaded && newsEntry.time > 0)
-            return i18n("Updated %1", rootItem.newsAge(newsEntry.time / 1000));
+            return i18n("Updated %1", applet.newsAge(newsEntry.time / 1000));
         return "";
     }
 
     // Extended quote and market session for the compact quote block. `extendedQuote`
     // is undefined while the regular session is running or when extended data is off.
-    readonly property var extendedQuote: rootItem.extendedQuote(rootItem.singleTicker)
+    readonly property var extendedQuote: applet.extendedQuote(applet.singleTicker)
     readonly property bool hasExtendedQuote: extendedQuote !== undefined && extendedQuote !== null
-    readonly property string marketSession: rootItem.marketStatusFor(rootItem.singleTicker)
+    readonly property string marketSession: applet.marketStatusFor(applet.singleTicker)
     // Instruments without extended-hours trading (indices, for example) still report the
     // exchange's pre/post windows, but they are effectively closed during them. The list
     // already uses isMarketClosedFor() for that; the header must agree with it.
-    readonly property bool marketClosed: rootItem.isMarketClosedFor(rootItem.singleTicker)
+    readonly property bool marketClosed: applet.isMarketClosedFor(applet.singleTicker)
     readonly property string marketSessionText: {
         switch (marketSession) {
             case "pre":    return marketClosed
@@ -123,8 +123,8 @@ Rectangle {
         }
     }
     readonly property color marketSessionColor: marketSession === "pre" && !marketClosed
-        ? (rootItem.isLightTheme ? "#b47a12" : "#d9a441")
-        : (marketSession === "open" ? rootItem.positiveColor : rootItem.secondaryTextColor)
+        ? (applet.isLightTheme ? "#b47a12" : "#d9a441")
+        : (marketSession === "open" ? applet.positiveColor : applet.secondaryTextColor)
     readonly property string extendedQuoteLabel: {
         if (!hasExtendedQuote) return "";
         return (extendedQuote.kind === "pre"
@@ -132,10 +132,10 @@ Rectangle {
                 : i18nc("@item:compact quote", "After-hours")).toUpperCase();
     }
     readonly property string noExtendedNote: {
-        if (hasExtendedQuote || !rootItem.showExtendedHours || marketSession === "") return "";
+        if (hasExtendedQuote || !applet.showExtendedHours || marketSession === "") return "";
         if (marketSession === "open") return "";
         // No extended quote can exist for these instruments, so the note would be noise.
-        if (!rootItem.hasPrePostDataFor(rootItem.singleTicker)) return "";
+        if (!applet.hasPrePostDataFor(applet.singleTicker)) return "";
         if (marketSession === "pre") return i18n("No pre-market quote");
         return i18n("No after-hours quote");
     }
@@ -144,27 +144,27 @@ Rectangle {
     // delay per exchange through the chart API, so the quote timestamp is shown next to
     // the widget's own refresh time instead of a hard-coded "15 minutes" that would be
     // wrong for exchanges with real-time data.
-    readonly property bool marketDataAvailable: rootItem.lastUpdated !== ""
-                                                 || rootItem.quoteTimestamp > 0
-    readonly property bool waitingForFirstQuote: rootItem.awaitingFirstRegularQuote(rootItem.singleTicker)
+    readonly property bool marketDataAvailable: applet.lastUpdated !== ""
+                                                 || applet.quoteTimestamp > 0
+    readonly property bool waitingForFirstQuote: applet.awaitingFirstRegularQuote(applet.singleTicker)
     readonly property string marketDataQuoteTime: {
         // During the opening seconds the regular quote is still the previous close;
         // show the pre-market quote time that is actually on screen instead.
         var timestamp = singleStockRoot.extendedQuote && singleStockRoot.extendedQuote.time
-                        ? singleStockRoot.extendedQuote.time : rootItem.quoteTimestamp;
+                        ? singleStockRoot.extendedQuote.time : applet.quoteTimestamp;
         if (!(timestamp > 0)) return "";
         return new Date(timestamp * 1000)
             .toLocaleTimeString(Qt.locale(), "HH:mm");
     }
     readonly property string marketDataUpdatedLine: {
         // The cached startup values replace the usual line so their age stays visible.
-        if (rootItem.currentShowingCached) return rootItem.currentStatusText;
-        if (rootItem.lastUpdated === "") return "";
-        return rootItem.nextUpdate !== ""
-            ? i18n("Updated %1 · Next %2", rootItem.lastUpdated, rootItem.nextUpdate)
-            : i18n("Updated %1", rootItem.lastUpdated);
+        if (applet.currentShowingCached) return applet.currentStatusText;
+        if (applet.lastUpdated === "") return "";
+        return applet.nextUpdate !== ""
+            ? i18n("Updated %1 · Next %2", applet.lastUpdated, applet.nextUpdate)
+            : i18n("Updated %1", applet.lastUpdated);
     }
-    readonly property string marketDataRefreshLabel: i18n("Refresh %1 min", rootItem.refreshIntervalMinutes)
+    readonly property string marketDataRefreshLabel: i18n("Refresh %1 min", applet.refreshIntervalMinutes)
     // Amber is too bright on a light tooltip and too dim on a dark one; pick a shade
     // that stays readable on the Plasma tooltip background.
     readonly property color marketDataWarnColor: Kirigami.Theme.backgroundColor.hslLightness > 0.5
@@ -177,9 +177,9 @@ Rectangle {
     // (weekend, holiday, or before the pre-market's first quote). Label it so the older
     // session is not read as today's; the previous close in the legend belongs to it too.
     readonly property string chartSessionNote: {
-        if (rootItem.effectiveChartRange !== "1D") return "";
-        if (rootItem.chartSessionCurrent || !(rootItem.chartSessionStart > 0)) return "";
-        var session = new Date(rootItem.chartSessionStart * 1000);
+        if (applet.effectiveChartRange !== "1D") return "";
+        if (applet.chartSessionCurrent || !(applet.chartSessionStart > 0)) return "";
+        var session = new Date(applet.chartSessionStart * 1000);
         var now = new Date();
         var yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
         if (session.getFullYear() === yesterday.getFullYear()
@@ -209,21 +209,21 @@ Rectangle {
 
     // The Application preset paints its own rounded card; with Plasma the system
     // background shows through and this view stays transparent.
-    color: rootItem.bgColor
-    radius: rootItem.appDrawnSurface ? 22 : 0
+    color: applet.bgColor
+    radius: applet.appDrawnSurface ? 22 : 0
     clip: true
 
     Text {
         anchors.centerIn: parent
         text: i18n("Loading...")
-        color: rootItem.secondaryTextColor
+        color: applet.secondaryTextColor
         font.pixelSize: 14
-        visible: rootItem.isMultiMode && singleStockRoot.visible && (!rootItem.chartDataPoints || rootItem.chartDataPoints.length === 0)
+        visible: applet.isMultiMode && singleStockRoot.visible && (!applet.chartDataPoints || applet.chartDataPoints.length === 0)
     }
 
     Item {
         id: singleView
-        visible: rootItem.showTwoList || rootItem.singleTicker.trim() !== ""
+        visible: applet.showTwoList || applet.singleTicker.trim() !== ""
         anchors.fill: parent
         anchors.leftMargin: 16
         anchors.rightMargin: 16
@@ -237,14 +237,14 @@ Rectangle {
 
             StockHeader {
                 id: stockHeader
-                applet: singleStockRoot.rootItem
+                applet: singleStockRoot.applet
                 host: singleStockRoot
                 contentWidth: contentColumn.width
             }
 
             QuoteBlock {
                 id: quoteBlock
-                applet: singleStockRoot.rootItem
+                applet: singleStockRoot.applet
                 host: singleStockRoot
             }
 
@@ -254,7 +254,7 @@ Rectangle {
             // without opening the configuration dialog.
             ChartControls {
                 id: chartControls
-                applet: singleStockRoot.rootItem
+                applet: singleStockRoot.applet
                 host: singleStockRoot
                 newsPane: newsPane
             }
@@ -273,9 +273,9 @@ Rectangle {
                     id: singleCanvas
                     anchors.fill: parent
                     visible: !singleStockRoot.newsMode
-                             && Array.isArray(singleStockRoot.rootItem.chartDataPoints)
-                             && singleStockRoot.rootItem.chartDataPoints.length > 0
-                    applet: singleStockRoot.rootItem
+                             && Array.isArray(singleStockRoot.applet.chartDataPoints)
+                             && singleStockRoot.applet.chartDataPoints.length > 0
+                    applet: singleStockRoot.applet
                     host: singleStockRoot
                 }
 
@@ -283,7 +283,7 @@ Rectangle {
                 NewsPane {
                     id: newsPane
                     anchors.fill: parent
-                    applet: singleStockRoot.rootItem
+                    applet: singleStockRoot.applet
                     active: singleStockRoot.newsMode
                     items: singleStockRoot.newsFilteredItems
                     stateText: singleStockRoot.newsStateText
@@ -310,7 +310,7 @@ Rectangle {
 
                     onClicked: (mouse) => {
                         if (mouse.button === Qt.MiddleButton) {
-                            if (rootItem.performMiddleClick(rootItem.singleTicker)) {
+                            if (applet.performMiddleClick(applet.singleTicker)) {
                                 quoteBlock.flicker();
                                 timerFullFlicker.restart();
                             }
@@ -320,7 +320,7 @@ Rectangle {
                     }
                     onDoubleClicked: (mouse) => {
                         if (mouse.button === Qt.LeftButton)
-                            rootItem.performDoubleClick(rootItem.singleTicker);
+                            applet.performDoubleClick(applet.singleTicker);
                     }
 
                     Menu {
@@ -328,11 +328,11 @@ Rectangle {
 
                         MenuItem {
                             text: i18n("Open on Yahoo Finance")
-                            onTriggered: rootItem.openYahooQuote(rootItem.singleTicker)
+                            onTriggered: applet.openYahooQuote(applet.singleTicker)
                         }
                         MenuItem {
                             text: i18n("Refresh")
-                            onTriggered: rootItem.refreshData()
+                            onTriggered: applet.refreshData()
                         }
                     }
 
@@ -350,7 +350,7 @@ Rectangle {
                     id: analystMarkers
                     anchors.fill: parent
                     z: 110
-                    applet: rootItem
+                    applet: singleStockRoot.applet
                     chartVisible: !singleStockRoot.newsMode
 
                     onMarkersShownChanged: singleStockRoot.analystMarkersShown = analystMarkers.markersShown
@@ -367,10 +367,10 @@ Rectangle {
                 // so choosing the parts by width cannot loop.
                 Layout.minimumWidth: 0
                 Layout.preferredWidth: 0
-                rootItem: singleStockRoot.rootItem
-                summary: singleStockRoot.rootItem.showPortfolioMode ? singleStockRoot.rootItem.portfolioSummary : null
-                sym: singleStockRoot.rootItem.currencySym
-                periodLabel: singleStockRoot.rootItem.chartPeriodLabel
+                applet: singleStockRoot.applet
+                summary: singleStockRoot.applet.showPortfolioMode ? singleStockRoot.applet.portfolioSummary : null
+                sym: singleStockRoot.applet.currencySym
+                periodLabel: singleStockRoot.applet.chartPeriodLabel
                 centered: true
             }
         }
