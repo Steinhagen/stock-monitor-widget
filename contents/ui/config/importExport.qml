@@ -53,6 +53,7 @@ Item {
     property bool cfg_showNews
     property bool cfg_newsSourceYahoo
     property bool cfg_newsSourceBvb
+    property bool cfg_newsSourceGoogle
     property int cfg_newsCount
     property int cfg_newsRefreshMinutes
     property bool cfg_limitHours

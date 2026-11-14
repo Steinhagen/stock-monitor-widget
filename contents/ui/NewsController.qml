@@ -1,6 +1,7 @@
 import QtQuick
 import "news.js" as News
 import "bvbnews.js" as BvbNews
+import "googlenews.js" as GoogleNews
 
 Item {
     id: newsController
@@ -21,9 +22,9 @@ Item {
     function setNewsEntry(key, changes) {
         var old = newsCache[key];
         var entry = old ? Object.assign({}, old)
-                        : { items: [], yahooItems: [], bvbItems: [], time: 0, attempt: 0,
-                            loaded: false, error: false, pending: false, nameTried: true,
-                            remaining: 0 };
+                        : { items: [], yahooItems: [], bvbItems: [], googleItems: [],
+                            time: 0, attempt: 0, loaded: false, error: false, pending: false,
+                            nameTried: true, googleNameTried: true, remaining: 0 };
         Object.assign(entry, changes);
         var copy = Object.assign({}, newsCache);
         copy[key] = entry;
@@ -45,10 +46,10 @@ Item {
         return name;
     }
 
-    // Headlines from both providers, newest first. A link or title can appear in both
-    // feeds (Yahoo sometimes carries the same BVB report), so either key removes it.
-    // Each provider is already sliced to newsCount.
-    function mergeNews(yahoo, bvb) {
+    // Headlines from every provider, newest first. A link or title can appear in more
+    // than one feed (Yahoo and Google often carry the same report), so either key removes
+    // it. Each provider is already sliced to newsCount.
+    function mergeNews(yahoo, bvb, google) {
         var merged = [];
         var seen = {};
         var add = function(items) {
@@ -66,6 +67,7 @@ Item {
         };
         add(yahoo || []);
         add(bvb || []);
+        add(google || []);
         merged.sort(function(a, b) { return (Number(b.time) || 0) - (Number(a.time) || 0); });
         return merged;
     }
@@ -83,14 +85,22 @@ Item {
             if (nameTried !== undefined) changes.nameTried = nameTried;
         } else if (source === "bvb") {
             changes.bvbItems = failed ? (entry.bvbItems || []) : (items || []);
+        } else if (source === "google") {
+            changes.googleItems = failed ? (entry.googleItems || []) : (items || []);
+            if (nameTried !== undefined) changes.googleNameTried = nameTried;
         } else {
             return;
         }
         changes.items = mergeNews(
             changes.yahooItems !== undefined ? changes.yahooItems : entry.yahooItems,
-            changes.bvbItems !== undefined ? changes.bvbItems : entry.bvbItems);
+            changes.bvbItems !== undefined ? changes.bvbItems : entry.bvbItems,
+            changes.googleItems !== undefined ? changes.googleItems : entry.googleItems);
         changes.loaded = true;
-        changes.error = entry.error || failed;
+        // A failed provider normally marks the update as failed. Google News is a third,
+        // optional feed and is unreachable on some networks, so its failure is only
+        // reported when it left the list empty.
+        var hasItems = (changes.items || []).length > 0;
+        changes.error = entry.error || (failed && (source !== "google" || !hasItems));
         if (!failed) changes.time = Date.now();
         changes.remaining = Math.max(0, (entry.remaining || 0) - 1);
         changes.pending = changes.remaining > 0;
@@ -223,6 +233,79 @@ Item {
         first.send();
     }
 
+    // Google News search feed. Unlike Yahoo it has no ticker tags, so the quoted company
+    // name is the whole relevance filter; the merge step removes duplicates. The locale
+    // picks the local edition of the search (Romanian outlets for a Romanian UI).
+    function fetchGoogleNews(key, query) {
+        var generation = newsGeneration;
+        var done = false;
+        var finish = function(items, error, nameTried) {
+            if (done) return;
+            done = true;
+            if (generation !== newsGeneration) return;
+            finishNewsSource(key, "google", items, error, nameTried);
+        };
+        var url = GoogleNews.feedUrl(query, Qt.locale().name);
+        if (url === "") {
+            finish([], "", true);
+            return;
+        }
+        var xhr = new XMLHttpRequest();
+        var settled = false;
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState !== XMLHttpRequest.DONE || settled) return;
+            settled = true;
+            if (xhr.status !== 200) {
+                finish([], "request failed (HTTP " + xhr.status + ")", true);
+                return;
+            }
+            // A redirect (an unsupported edition, or Google's rate limit) lands on an
+            // HTML page instead of the RSS body. Treat that as a failure, not as "no
+            // headlines", so the next interval tries again.
+            var body = String(xhr.responseText || "");
+            if (body.indexOf("<rss") < 0) {
+                finish([], "unexpected reply", true);
+                return;
+            }
+            var items;
+            try {
+                items = GoogleNews.parse(body, applet.newsCount);
+            } catch (e) {
+                finish([], "could not parse the reply: " + e, true);
+                return;
+            }
+            finish(items, "", true);
+        };
+        xhr.ontimeout = function() {
+            if (settled) return;
+            settled = true;
+            finish([], "request timed out", true);
+        };
+        xhr.onerror = function() {
+            if (settled) return;
+            settled = true;
+            finish([], "request failed", true);
+        };
+        xhr.open("GET", url);
+        xhr.timeout = 20000;
+        xhr.send();
+    }
+
+    // The Google query needs the company name, so it waits for the quote when the name
+    // is still unknown (nameTried false) and is retried by retryNewsWithName().
+    function startGoogleNews(key, symbol) {
+        var name = newsCompanyName(symbol);
+        if (name === null) {
+            finishNewsSource(key, "google", [], "", false);
+            return;
+        }
+        if (name === "") {
+            finishNewsSource(key, "google", [], "", true);
+            return;
+        }
+        fetchGoogleNews(key, name);
+    }
+
     // Fetches the headlines for `symbol` unless they are fresh. `force` (the refresh
     // button and menu) skips the freshness and retry checks.
     function requestNews(symbol, force) {
@@ -235,7 +318,7 @@ Item {
         if (entry && entry.pending) return;
         if (!force && entry) {
             if (entry.loaded && !entry.error && now - entry.time < applet.newsRefreshMinutes * 60000) {
-                if (entry.nameTried === false) retryNewsWithName();
+                if (entry.nameTried === false || entry.googleNameTried === false) retryNewsWithName();
                 return;
             }
             // Do not hammer the feeds after a failure; the next try comes with the
@@ -244,31 +327,41 @@ Item {
         }
         var wantsYahoo = applet.newsSourceYahoo;
         var wantsBvb = applet.newsSourceBvb && BvbNews.baseSymbol(sym) !== "";
-        var remaining = (wantsYahoo ? 1 : 0) + (wantsBvb ? 1 : 0);
+        var wantsGoogle = applet.newsSourceGoogle;
+        var remaining = (wantsYahoo ? 1 : 0) + (wantsBvb ? 1 : 0) + (wantsGoogle ? 1 : 0);
         if (remaining === 0) return;
         setNewsEntry(key, { pending: true, remaining: remaining,
                                  attempt: now, error: false });
         if (wantsYahoo) fetchYahooNews(key, sym, sym, false);
         if (wantsBvb) fetchBvbNews(key, sym);
+        if (wantsGoogle) startGoogleNews(key, sym);
     }
 
-    // Runs the company-name query for the shown symbol when its ticker query found
-    // nothing before the name was known.
+    // Runs the company-name queries for the shown symbol when the first attempt found
+    // nothing before the name was known. Yahoo and Google are retried independently.
     function retryNewsWithName() {
-        if (!applet.newsPaneShown || !applet.newsSourceYahoo) return;
+        if (!applet.newsPaneShown) return;
         var sym = applet.singleTicker.trim();
+        if (sym === "") return;
         var key = newsKey(sym);
         var entry = newsCache[key];
-        if (!entry || !entry.loaded || entry.pending || entry.nameTried !== false
-                || (entry.yahooItems || []).length > 0) return;
+        if (!entry || !entry.loaded || entry.pending) return;
         var name = newsCompanyName(sym);
         if (name === null) return;
+        var retryYahoo = applet.newsSourceYahoo && entry.nameTried === false
+                         && (entry.yahooItems || []).length === 0;
+        var retryGoogle = applet.newsSourceGoogle && entry.googleNameTried === false
+                          && (entry.googleItems || []).length === 0;
+        if (!retryYahoo && !retryGoogle) return;
         if (name === "") {
-            setNewsEntry(key, { nameTried: true });
+            setNewsEntry(key, { nameTried: true, googleNameTried: true });
             return;
         }
-        setNewsEntry(key, { pending: true, remaining: 1, attempt: Date.now() });
-        fetchYahooNews(key, sym, name, true);
+        setNewsEntry(key, { pending: true,
+                            remaining: (retryYahoo ? 1 : 0) + (retryGoogle ? 1 : 0),
+                            attempt: Date.now(), error: false });
+        if (retryYahoo) fetchYahooNews(key, sym, name, true);
+        if (retryGoogle) fetchGoogleNews(key, name);
     }
 
     function openNewsLink(url) {
@@ -283,6 +376,17 @@ Item {
 
     function openBvbNews(symbol) {
         var url = BvbNews.detailUrl(symbol);
+        if (url !== "") Qt.openUrlExternally(url);
+    }
+
+    // The Google News search page for the shown company, using the same query as the
+    // feed (the name may not be known yet, in which case the symbol is searched).
+    function openGoogleNews(symbol) {
+        var clean = String(symbol === undefined || symbol === null ? "" : symbol).trim();
+        if (clean === "") return;
+        var name = newsCompanyName(clean);
+        var query = (name === null || name === "") ? clean : name;
+        var url = GoogleNews.searchPageUrl(query, Qt.locale().name);
         if (url !== "") Qt.openUrlExternally(url);
     }
 

@@ -46,6 +46,7 @@ var SETTINGS_KEYS = [
     "showNews",
     "newsSourceYahoo",
     "newsSourceBvb",
+    "newsSourceGoogle",
     "newsCount",
     "newsRefreshMinutes",
     "limitHours",
@@ -104,7 +105,8 @@ var BOOL_KEYS = {
     showChartHover: true,
     showNews: true,
     newsSourceYahoo: true,
-    newsSourceBvb: true
+    newsSourceBvb: true,
+    newsSourceGoogle: true
 };
 
 // [minimum, maximum] for every integer setting. The ranges mirror the SpinBoxes and

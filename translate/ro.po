@@ -26,16 +26,12 @@ msgid "Symbols & Lists"
 msgstr "Simboluri și liste"
 
 #: contents/config/config.qml
-msgid "Panel view"
-msgstr "Vizualizare panou"
-
-#: contents/config/config.qml
-msgid "Mouse actions"
-msgstr "Acțiuni mouse"
-
-#: contents/config/config.qml
 msgid "Chart & News"
 msgstr "Grafic și știri"
+
+#: contents/config/config.qml
+msgid "Panel view"
+msgstr "Vizualizare panou"
 
 #: contents/config/config.qml
 msgid "Portfolio Tracking"
@@ -44,6 +40,10 @@ msgstr "Urmărire portofoliu"
 #: contents/config/config.qml
 msgid "Appearance"
 msgstr "Aspect"
+
+#: contents/config/config.qml
+msgid "Mouse actions"
+msgstr "Acțiuni mouse"
 
 #: contents/config/config.qml
 msgid "Import / Export"
@@ -324,12 +324,16 @@ msgid "BVB (Romanian symbols)"
 msgstr "BVB (simboluri românești)"
 
 #: contents/ui/config/chartNews.qml
+msgid "Google (search by company name)"
+msgstr "Google (căutare după numele companiei)"
+
+#: contents/ui/config/chartNews.qml
 msgid "Select at least one news source."
 msgstr "Selectați cel puțin o sursă de știri."
 
 #: contents/ui/config/chartNews.qml
-msgid "Headlines from the sources selected above. Yahoo Finance covers general news; BVB provides the issuer's announcements for symbols ending in .RO. Switch with the icons next to the market status. Not available in the list-only view."
-msgstr "Titluri din sursele selectate mai sus. Yahoo Finance acoperă știrile generale; BVB oferă comunicatele emitentului pentru simbolurile care se termină în .RO. Comută cu pictogramele de lângă starea pieței. Indisponibil în vizualizarea doar cu listă."
+msgid "Headlines from the sources selected above. Yahoo Finance covers general news; Google adds a web search by company name; BVB provides the issuer's announcements for symbols ending in .RO. Switch with the icons next to the market status. Not available in the list-only view."
+msgstr "Titluri din sursele selectate mai sus. Yahoo Finance acoperă știrile generale; Google adaugă o căutare web după numele companiei; BVB oferă comunicatele emitentului pentru simbolurile care se termină în .RO. Comută cu pictogramele de lângă starea pieței. Indisponibil în vizualizarea doar cu listă."
 
 #: contents/ui/config/chartNews.qml
 msgid "Headlines per source (5–50):"
@@ -1255,12 +1259,20 @@ msgid "More on BVB"
 msgstr "Mai multe pe BVB"
 
 #: contents/ui/SingleStockView.qml
+msgid "More on Google"
+msgstr "Mai multe pe Google"
+
+#: contents/ui/SingleStockView.qml
 msgid "More on Yahoo Finance"
 msgstr "Mai multe pe Yahoo Finance"
 
 #: contents/ui/SingleStockView.qml
 msgid "Open on BVB"
 msgstr "Deschide pe BVB"
+
+#: contents/ui/SingleStockView.qml
+msgid "Open on Google"
+msgstr "Deschide pe Google"
 
 #: contents/ui/TooltipContent.qml
 msgid "Plasma Stock Monitor"
@@ -1314,6 +1326,21 @@ msgstr[2] "%1 de acțiuni · mediu %2"
 #: contents/ui/TooltipContent.qml
 msgid "Updated"
 msgstr "Actualizat"
+
+#~ msgid "Google News (search by company name)"
+#~ msgstr "Google News (căutare după numele companiei)"
+
+#~ msgid "Headlines from the sources selected above. Yahoo Finance covers general news; Google News adds a web search by company name; BVB provides the issuer's announcements for symbols ending in .RO. Switch with the icons next to the market status. Not available in the list-only view."
+#~ msgstr "Titluri din sursele selectate mai sus. Yahoo Finance acoperă știrile generale; Google News adaugă o căutare web după numele companiei; BVB oferă comunicatele emitentului pentru simbolurile care se termină în .RO. Comută cu pictogramele de lângă starea pieței. Indisponibil în vizualizarea doar cu listă."
+
+#~ msgid "More on Google News"
+#~ msgstr "Mai multe pe Google News"
+
+#~ msgid "Open on Google News"
+#~ msgstr "Deschide pe Google News"
+
+#~ msgid "Headlines from the sources selected above. Yahoo Finance covers general news; BVB provides the issuer's announcements for symbols ending in .RO. Switch with the icons next to the market status. Not available in the list-only view."
+#~ msgstr "Titluri din sursele selectate mai sus. Yahoo Finance acoperă știrile generale; BVB oferă comunicatele emitentului pentru simbolurile care se termină în .RO. Comută cu pictogramele de lângă starea pieței. Indisponibil în vizualizarea doar cu listă."
 
 #~ msgid "Candles + volume"
 #~ msgstr "Candele + volum"

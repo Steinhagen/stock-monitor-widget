@@ -294,6 +294,7 @@ PlasmoidItem {
     property bool showNews: Plasmoid.configuration.showNews
     property bool newsSourceYahoo: Plasmoid.configuration.newsSourceYahoo
     property bool newsSourceBvb: Plasmoid.configuration.newsSourceBvb
+    property bool newsSourceGoogle: Plasmoid.configuration.newsSourceGoogle
     property int newsCount: Plasmoid.configuration.newsCount
     property int newsRefreshMinutes: Plasmoid.configuration.newsRefreshMinutes
     // "chart" or "news": what the single-stock view shows below the quote. Not persisted:
@@ -569,9 +570,10 @@ PlasmoidItem {
     // Fetched only while the News pane is on screen, never by the quote timer. Kept in
     // memory per symbol, so switching rows in the two-column view reuses fresh results;
     // headlines go stale quickly, so they are not saved in the config like the quotes.
-    // Yahoo supplies the general headlines; Bucharest symbols (.RO) also get the issuer's
-    // announcements from BVB. Both are merged into `items`, each item keeping its
-    // `source`, so the news view can filter by provider.
+    // Yahoo supplies the general headlines, Google News searches the web by company
+    // name, and Bucharest symbols (.RO) also get the issuer's announcements from BVB.
+    // All are merged into `items`, each item keeping its `source`, so the news view can
+    // filter by provider.
     // Set by our own panel popup; Plasma's popup reports through `expanded`.
     property bool panelPopupShown: false
     readonly property bool fullViewShown: !root.inPanel || root.expanded || root.panelPopupShown
@@ -580,6 +582,7 @@ PlasmoidItem {
     readonly property bool newsAvailable: root.showNews
                                           && root.singleTicker.trim() !== ""
                                           && (root.newsSourceYahoo
+                                              || root.newsSourceGoogle
                                               || (root.newsSourceBvb
                                                   && BvbNews.baseSymbol(root.singleTicker) !== ""))
     // The single-stock view is not shown in the list-only multi-stock view.
@@ -603,6 +606,7 @@ PlasmoidItem {
     function openNewsLink(url) { newsController.openNewsLink(url); }
     function openYahooNews(symbol) { newsController.openYahooNews(symbol); }
     function openBvbNews(symbol) { newsController.openBvbNews(symbol); }
+    function openGoogleNews(symbol) { newsController.openGoogleNews(symbol); }
 
     // --- ANALYST PRICE TARGETS ---
     // Fetched only when the option is on, for the shown symbol. The controller keeps
@@ -632,6 +636,7 @@ PlasmoidItem {
     }
     onNewsSourceYahooChanged: Qt.callLater(root.refreshNewsSources)
     onNewsSourceBvbChanged: Qt.callLater(root.refreshNewsSources)
+    onNewsSourceGoogleChanged: Qt.callLater(root.refreshNewsSources)
     // A larger count must not wait for the next interval.
     onNewsCountChanged: {
         newsController.invalidate();

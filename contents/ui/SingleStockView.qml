@@ -53,8 +53,9 @@ Rectangle {
             seen[source] = true;
             sources.push(source);
         }
-        // Yahoo is the primary feed, BVB follows; unknown providers are alphabetical.
-        var order = ["Yahoo", "BVB"];
+        // Yahoo is the primary feed, BVB follows, then Google; unknown providers
+        // are alphabetical.
+        var order = ["Yahoo", "BVB", "Google"];
         sources.sort(function(a, b) {
             var ia = order.indexOf(a);
             var ib = order.indexOf(b);
@@ -69,8 +70,18 @@ Rectangle {
     property string newsSource: ""
     readonly property bool newsFilterRelevant: newsSources.length > 1
     readonly property string newsSourceFilter: newsSources.indexOf(newsSource) >= 0 ? newsSource : ""
-    readonly property bool newsMoreIsBvb: newsSourceFilter === "BVB"
-                                          || (newsSources.length === 1 && newsSources[0] === "BVB")
+    // What the "More on ..." link opens: the filtered provider, or for the combined list
+    // the provider of the newest headline, so a BVB-only result does not send the user to
+    // Yahoo. Falls back to the first provider, then Yahoo.
+    readonly property string newsMoreSource: {
+        if (newsSourceFilter !== "") return newsSourceFilter;
+        var items = rootItem.newsItems;
+        if (items.length > 0) {
+            var source = String(items[0].source || "").trim();
+            if (source !== "") return source;
+        }
+        return newsSources.length > 0 ? newsSources[0] : "Yahoo";
+    }
     readonly property var newsFilteredItems: {
         var items = rootItem.newsItems;
         if (newsSourceFilter === "") return items;
@@ -1183,8 +1194,9 @@ Rectangle {
                             anchors.left: parent.left
                             anchors.leftMargin: 6
                             anchors.verticalCenter: parent.verticalCenter
-                            text: (singleStockRoot.newsMoreIsBvb ? i18n("More on BVB")
-                                                                 : i18n("More on Yahoo Finance")) + " ›"
+                            text: (singleStockRoot.newsMoreSource === "BVB" ? i18n("More on BVB")
+                                   : singleStockRoot.newsMoreSource === "Google" ? i18n("More on Google")
+                                   : i18n("More on Yahoo Finance")) + " ›"
                             textFormat: Text.PlainText
                             color: singleStockRoot.rootItem.secondaryTextColor
                             font.pixelSize: 9
@@ -1194,8 +1206,10 @@ Rectangle {
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
                                 onClicked: {
-                                    if (singleStockRoot.newsMoreIsBvb)
+                                    if (singleStockRoot.newsMoreSource === "BVB")
                                         singleStockRoot.rootItem.openBvbNews(singleStockRoot.rootItem.singleTicker);
+                                    else if (singleStockRoot.newsMoreSource === "Google")
+                                        singleStockRoot.rootItem.openGoogleNews(singleStockRoot.rootItem.singleTicker);
                                     else
                                         singleStockRoot.rootItem.openYahooNews(singleStockRoot.rootItem.singleTicker);
                                 }
@@ -1227,6 +1241,11 @@ Rectangle {
                         text: i18n("Open on BVB")
                         visible: singleStockRoot.newsSources.indexOf("BVB") >= 0
                         onTriggered: singleStockRoot.rootItem.openBvbNews(singleStockRoot.rootItem.singleTicker)
+                    }
+                    MenuItem {
+                        text: i18n("Open on Google")
+                        visible: singleStockRoot.newsSources.indexOf("Google") >= 0
+                        onTriggered: singleStockRoot.rootItem.openGoogleNews(singleStockRoot.rootItem.singleTicker)
                     }
                     MenuItem {
                         text: i18n("Refresh news")

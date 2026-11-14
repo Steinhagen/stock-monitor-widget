@@ -27,15 +27,11 @@ msgid "Symbols & Lists"
 msgstr ""
 
 #: contents/config/config.qml
-msgid "Panel view"
-msgstr ""
-
-#: contents/config/config.qml
-msgid "Mouse actions"
-msgstr ""
-
-#: contents/config/config.qml
 msgid "Chart & News"
+msgstr ""
+
+#: contents/config/config.qml
+msgid "Panel view"
 msgstr ""
 
 #: contents/config/config.qml
@@ -44,6 +40,10 @@ msgstr ""
 
 #: contents/config/config.qml
 msgid "Appearance"
+msgstr ""
+
+#: contents/config/config.qml
+msgid "Mouse actions"
 msgstr ""
 
 #: contents/config/config.qml
@@ -322,11 +322,15 @@ msgid "BVB (Romanian symbols)"
 msgstr ""
 
 #: contents/ui/config/chartNews.qml
+msgid "Google (search by company name)"
+msgstr ""
+
+#: contents/ui/config/chartNews.qml
 msgid "Select at least one news source."
 msgstr ""
 
 #: contents/ui/config/chartNews.qml
-msgid "Headlines from the sources selected above. Yahoo Finance covers general news; BVB provides the issuer's announcements for symbols ending in .RO. Switch with the icons next to the market status. Not available in the list-only view."
+msgid "Headlines from the sources selected above. Yahoo Finance covers general news; Google adds a web search by company name; BVB provides the issuer's announcements for symbols ending in .RO. Switch with the icons next to the market status. Not available in the list-only view."
 msgstr ""
 
 #: contents/ui/config/chartNews.qml
@@ -1247,11 +1251,19 @@ msgid "More on BVB"
 msgstr ""
 
 #: contents/ui/SingleStockView.qml
+msgid "More on Google"
+msgstr ""
+
+#: contents/ui/SingleStockView.qml
 msgid "More on Yahoo Finance"
 msgstr ""
 
 #: contents/ui/SingleStockView.qml
 msgid "Open on BVB"
+msgstr ""
+
+#: contents/ui/SingleStockView.qml
+msgid "Open on Google"
 msgstr ""
 
 #: contents/ui/TooltipContent.qml

@@ -142,6 +142,10 @@
             <label>Use BVB as a news source for Romanian symbols</label>
             <default>true</default>
         </entry>
+        <entry name="newsSourceGoogle" type="Bool">
+            <label>Use Google as a news source (search by company name)</label>
+            <default>true</default>
+        </entry>
         <entry name="newsCount" type="Int">
             <label>Number of headlines to show per source</label>
             <default>24</default>

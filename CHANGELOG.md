@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Google** as a third news source (a Google News search by company name), next to
+  Yahoo Finance and BVB. It searches by company name, using the widget's language and
+  region, so symbols that Yahoo rarely tags (BVB, CEE, small caps) get local headlines
+  too. Each headline keeps its outlet as the publisher; quote pages that Google indexes
+  as news are filtered out. Configured on the **Chart & News** page, filtered like the
+  other sources in the News header, and the “More on …” link opens the same search.
+
 ## [1.7] - 2026-11-14
 
 ### Added
