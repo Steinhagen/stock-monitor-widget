@@ -29,7 +29,6 @@ Rectangle {
         textFormat: Text.PlainText
         color: button.selected ? button.applet.tickerColor : button.applet.secondaryTextColor
         font.pixelSize: 9
-        font.bold: true
     }
 
     MouseArea {
