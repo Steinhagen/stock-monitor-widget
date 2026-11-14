@@ -138,7 +138,8 @@ QtObject {
             if (usesPlasmaSurface) return systemDisabledTextColor;
             return appLightPalette ? "#e0e0e0" : "#333333";
         } else if (what === "text") {
-            if (usesPlasmaSurface) return systemDisabledTextColor;
+            if (usesPlasmaSurface)
+                return Qt.rgba(systemTextColor.r, systemTextColor.g, systemTextColor.b, 0.72);
             return appLightPalette ? "#555555" : "#888888";
         }
         return "";

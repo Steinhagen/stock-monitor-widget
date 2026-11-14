@@ -91,6 +91,16 @@ TestCase {
         verify(Qt.colorEqual(theme.systemTextColor, "#000000"));
     }
 
+    function test_secondaryOnPlasma() {
+        fakeConfig.themePreset = 1;
+        var theme = make("#eff0f1", fakeConfig, "#31363b", "#9931363b");
+        // Secondary text is the readable text colour at 72%, not the very faint disabled role.
+        compare(theme.systemTextColor, "#31363b");
+        verify(Math.abs(theme.secondaryTextColor.a - 0.72) < 0.001);
+        verify(theme.secondaryTextColor.r < 0.4);
+        fakeConfig.themePreset = 0;
+    }
+
     function test_plasmaSurface() {
         fakeConfig.themePreset = 1;
         var theme = make("#1a1a1a");
