@@ -664,17 +664,7 @@ PlasmoidItem {
     function processExtendedData(symbol, json) { app.market.processExtendedData(symbol, json); }
     function fetchExtendedHours(symbol) { app.market.fetchExtendedHours(symbol); }
 
-    function refreshExtendedHours() {
-        if (!root.showExtendedHours) return;
-        if (root.isMultiMode) {
-            root.multiTickers.split(",").forEach(function(t) {
-                var clean = t.trim();
-                if (clean !== "") root.fetchExtendedHours(clean);
-            });
-        } else if (root.singleTicker.trim() !== "") {
-            root.fetchExtendedHours(root.singleTicker);
-        }
-    }
+    function refreshExtendedHours() { refreshCycle.refreshExtended(); }
 
     onShowExtendedHoursChanged: {
         if (!showExtendedHours) app.market.clearExtended();
@@ -690,51 +680,10 @@ PlasmoidItem {
         }
     }
 
-    function refreshData() {
-        if (root.isMultiMode) {
-            fetchMultiStocks();
-            // The list request above covers the chart only when both use the same range.
-            if (root.effectiveChartRange !== root.chartRange && root.singleTicker.trim() !== "")
-                fetchSingleStock(root.singleTicker);
-        } 
-        else {
-            fetchSingleStock(root.singleTicker);
-            // The chart can use a range of its own; the panel must keep the configured one.
-            if (root.effectiveChartRange !== root.chartRange)
-                fetchPanelStock(root.singleTicker);
-        }
-        refreshExtendedHours();
-    }
+    function refreshData() { refreshCycle.refreshQuotes(); }
 
     // --- NEW CHECK: IS MARKET OPEN? ---
-    function checkTimeAndRefresh() {
-        // 1. Always check weekend first (optional, but saves battery)
-        var d = new Date();
-        var day = d.getDay();
-        // 0=Sun, 6=Sat. Crypto (BTC) runs 24/7, so you might want to skip this check for crypto.
-        // Assuming stocks for now:
-        if (root.skipWeekendRefresh && (day === 0 || day === 6)) {
-            return;
-        }
-
-        // 2. Check Time Window if enabled
-        if (root.limitHours) {
-            var nowHour = d.getHours();
-            var nowMin = d.getMinutes();
-            var currentTimeVal = nowHour * 60 + nowMin;
-
-            var startTimeVal = root.startHour * 60 + root.startMinute;
-            var endTimeVal = root.endHour * 60 + root.endMinute;
-
-            // If we are BEFORE start OR AFTER end, stop.
-            if (currentTimeVal < startTimeVal || currentTimeVal >= endTimeVal) {
-                return; // Do not fetch
-            }
-        }
-
-        // 3. If passed, refresh
-        refreshData();
-    }
+    function checkTimeAndRefresh() { refreshCycle.checkTime(); }
 
     // --- STARTUP RETRY / CACHED QUOTES ---
     // The retry back-off and the persisted quote snapshot live in QuoteCacheController;
@@ -940,21 +889,18 @@ PlasmoidItem {
     readonly property bool customPanelPopup: !root.usesPlasmaSurface
     property bool panelShowPercent: false
 
+    RefreshController {
+        id: refreshCycle
+        applet: root
+        market: app.market
+    }
+
     Timer {
         interval: Math.max(3, app.config.alternateInterval) * 1000
         running: root.panelAlternate
         repeat: true
         onTriggered: root.panelShowPercent = !root.panelShowPercent
         onRunningChanged: if (!running) root.panelShowPercent = false
-    }
-
-    Timer {
-        interval: app.config.refreshInterval * 60000
-        running: true
-        repeat: true
-        triggeredOnStart: true
-        // CHANGED: Call checkTimeAndRefresh instead of refreshData directly
-        onTriggered: root.checkTimeAndRefresh()
     }
 
     // Exchange rates change once a day. Checking hourly keeps the download close to the

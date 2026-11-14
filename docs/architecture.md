@@ -7,7 +7,7 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 ## Why this exists
 
 The widget works, but three files still carry most of the behaviour: `main.qml`
-(1,181 lines, ~35 functions), `SingleStockView.qml` (2,231) and
+(1,127 lines, ~30 functions), `SingleStockView.qml` (2,231) and
 `config/portfolio.qml` (1,478) — together about half of the source tree. That has
 concrete costs:
 
@@ -301,14 +301,10 @@ update the fixture and the parser test together.
       Google live under `providers/`, and `NewsController` drives them through a
       registry: adding a source is a descriptor plus one registry entry. `main.qml`
       uses the Yahoo chart and FX providers for every request it makes.
-- [ ] **Phase 3 — controllers and stores.** Split `main.qml`; introduce `AppConfig`,
-      `AppActions`, `App.qml`; `main.qml` becomes composition. In progress:
-      `app/AppConfig.qml`, `app/App.qml`, `controllers/FxController.qml`,
-      `controllers/MarketController.qml`, `state/QuoteStore.qml`,
-      `controllers/SingleQuoteController.qml`, `controllers/WatchlistController.qml`
-      (row model), `controllers/QuoteCacheController.qml` (snapshot + startup retry)
-      and `app/AppActions.qml` (selection, mouse actions, chart buttons) are in. The
-      refresh orchestration and the theme are next.
+- [x] **Phase 3 — controllers and stores.** `AppConfig`, `AppActions`, `App`, `QuoteStore`,
+      the FX, market, refresh, quote, watchlist and cache controllers are in, and
+      `main.qml` keeps the public names the views use. It is down to about 1,127 lines;
+      the remaining bulk is the theme, the tooltip and the two view compositions.
 - [ ] **Phase 4 — view decomposition.** Split `SingleStockView`; extract shared
       components; `Theme`; remove `rootItem.*` from components.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the
