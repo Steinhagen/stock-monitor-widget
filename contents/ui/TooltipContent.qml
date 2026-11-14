@@ -1,4 +1,5 @@
 import QtQuick
+import "core/Text.js" as Text
 
 Item {
     id: tooltipContent
@@ -25,10 +26,7 @@ Item {
     }
 
     function htmlEscape(value) {
-        return String(value === undefined || value === null ? "" : value)
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;");
+        return Text.escapeHtml(value);
     }
 
     function htmlColor(color) {

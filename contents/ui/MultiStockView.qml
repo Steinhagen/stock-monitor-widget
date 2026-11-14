@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
+import "core/Text.js" as Text
 
 Rectangle {
     id: multiStockRoot
@@ -408,8 +409,8 @@ Rectangle {
                                                        ? "&nbsp;·&nbsp;" + i18nc("@item:market status", "closed") : "";
                                     // The caption comes from the translation, so escape it before it is
                                     // embedded in the rich text; the &nbsp; gap is added afterwards.
-                                    var fullLabel = rootItem.htmlEscape(e.label) + closedSuffix;
-                                    var shortLabel = rootItem.htmlEscape(e.kind === "pre"
+                                    var fullLabel = Text.escapeHtml(e.label) + closedSuffix;
+                                    var shortLabel = Text.escapeHtml(e.kind === "pre"
                                                                          ? i18nc("@item:short stock market session", "Pre")
                                                                          : i18nc("@item:short stock market session", "After")) + closedSuffix;
                                     var tiers = [

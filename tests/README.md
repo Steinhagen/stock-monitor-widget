@@ -43,6 +43,7 @@ tests/
 | `tst_registry.qml` | enabled news sources, BVB coverage, optional source |
 | `tst_news_controller.qml` | the controller merges the per-source lists |
 | `tst_appconfig.qml` | configuration defaults, fallbacks and clamps |
+| `tst_text.qml` | HTML escaping for rich-text labels |
 | `tst_fxcontroller.qml` | rate cache, conversion and persistence |
 | `tst_marketcontroller.qml` | session status and extended-quote selection |
 
