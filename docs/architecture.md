@@ -320,8 +320,10 @@ update the fixture and the parser test together.
       `settings/portfolio/PortfolioRow.qml`, and the purchase date picker to
       `settings/portfolio/DatePicker.qml`, and the add/edit form to
       `settings/portfolio/LotEditor.qml`. The backup format (`backupFormat.js`), the IO
-      wrapper and the file dialogs now live in `settings/importExport/`. Next: move the
-      remaining settings helpers and `PositionLine.qml` into their target folders.
+      wrapper and the file dialogs live in `settings/importExport/`; `window.js` is now
+      `settings/components/SettingsWindow.js` and `PositionLine.qml` is in
+      `ui/components/`. The tree matches the target; the portfolio page still holds its
+      data logic (~1,022 lines) and can be split further.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
       on every pull request (done ahead of the other phases).
 

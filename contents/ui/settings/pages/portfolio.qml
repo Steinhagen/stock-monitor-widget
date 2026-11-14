@@ -4,7 +4,7 @@ import QtQuick.Layouts
 import QtQuick.Window
 import org.kde.kirigami as Kirigami
 import "../../domain/currencies.js" as Currency
-import "window.js" as ConfigWindow
+import "../components/SettingsWindow.js" as ConfigWindow
 
 Item {
     id: page

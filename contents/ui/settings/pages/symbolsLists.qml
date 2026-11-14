@@ -3,7 +3,7 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import QtQuick.Window
 import org.kde.kirigami as Kirigami
-import "window.js" as ConfigWindow
+import "../components/SettingsWindow.js" as ConfigWindow
 import "../../providers/yahoo/search.js" as YahooSearch
 
 Item {

@@ -5,7 +5,7 @@ import QtQuick.Window
 import Qt.labs.platform as QLP
 import org.kde.kirigami as Kirigami
 import "../importExport/backupFormat.js" as Backup
-import "window.js" as ConfigWindow
+import "../components/SettingsWindow.js" as ConfigWindow
 import "../importExport"
 
 Item {
