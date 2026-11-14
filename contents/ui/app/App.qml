@@ -13,7 +13,7 @@ Item {
     // Host palette, passed by main.qml from Kirigami.
     property color hostTextColor: "#ffffff"
     property color systemBackgroundColor: "#1a1a1a"
-    property color systemDisabledTextColor: "#888888"
+    property color hostDisabledTextColor: "#888888"
 
     AppConfig {
         id: configObject
@@ -25,7 +25,7 @@ Item {
         config: configObject
         hostTextColor: app.hostTextColor
         systemBackgroundColor: app.systemBackgroundColor
-        systemDisabledTextColor: app.systemDisabledTextColor
+        hostDisabledTextColor: app.hostDisabledTextColor
     }
 
     FxController {

@@ -10,11 +10,14 @@ QtObject {
     property var config: null
     property color hostTextColor: "#ffffff"
     property color systemBackgroundColor: "#1a1a1a"
-    property color systemDisabledTextColor: "#888888"
+    property color hostDisabledTextColor: "#888888"
 
     // Edit mode can hand the widget a text colour that matches the background (Plasma
     // switches the scheme for the toolbox); fall back to readable black or white.
     readonly property color systemTextColor: readableText(hostTextColor, systemBackgroundColor)
+
+    // The disabled/secondary colour can come from the same mismatched palette.
+    readonly property color systemDisabledTextColor: readableSecondary(hostDisabledTextColor, systemBackgroundColor, systemTextColor)
 
 
     // Preset: 0 = Application, 1 = Plasma. -1 is the "not migrated yet" sentinel.
@@ -75,6 +78,11 @@ QtObject {
     function readableText(color, bg) {
         if (contrastRatio(color, bg) >= 3) return color;
         return bg.hslLightness > 0.5 ? "#000000" : "#ffffff";
+    }
+
+    function readableSecondary(color, bg, textColor) {
+        if (contrastRatio(color, bg) >= 2.5) return color;
+        return Qt.rgba(textColor.r, textColor.g, textColor.b, 0.65);
     }
 
     // Returns the colour unchanged when it already reads well on bg. Otherwise keeps the

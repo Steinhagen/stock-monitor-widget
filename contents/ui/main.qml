@@ -24,7 +24,7 @@ PlasmoidItem {
         configuration: Plasmoid.configuration
         hostTextColor: Kirigami.Theme.textColor
         systemBackgroundColor: Kirigami.Theme.backgroundColor
-        systemDisabledTextColor: Kirigami.Theme.disabledTextColor
+        hostDisabledTextColor: Kirigami.Theme.disabledTextColor
     }
 
     QuoteStore {

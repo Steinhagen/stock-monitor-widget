@@ -17,14 +17,14 @@ TestCase {
         property int bgOpacity: 100
     }
 
-    function make(systemBackground, config, hostText) {
+    function make(systemBackground, config, hostText, hostDisabled) {
         var component = Qt.createComponent(Qt.resolvedUrl("../../contents/ui/platform/Theme.qml"));
         compare(component.status, Component.Ready, component.errorString());
         var theme = component.createObject(this, {
             "config": config || fakeConfig,
             "hostTextColor": hostText || "#eff0f1",
             "systemBackgroundColor": systemBackground,
-            "systemDisabledTextColor": "#7f8c8d"
+            "hostDisabledTextColor": hostDisabled || "#7f8c8d"
         });
         verify(theme !== null);
         return theme;
@@ -65,6 +65,16 @@ TestCase {
         // The card colour keeps the configured opacity.
         verify(Math.abs(theme.bgColor.a - 1) < 1e-6);
         fakeConfig.themeColors = 0;
+    }
+
+    function test_secondaryFallback() {
+        // The popup can report a black disabledTextColor while the text itself is white.
+        fakeConfig.themePreset = 1;
+        var theme = make("#000000", fakeConfig, "#000000", "#000000");
+        verify(Qt.colorEqual(theme.systemTextColor, "#ffffff"));
+        compare(theme.systemDisabledTextColor.a > 0.6 && theme.systemDisabledTextColor.a < 0.7, true);
+        verify(theme.systemDisabledTextColor.r > 0.9);
+        fakeConfig.themePreset = 0;
     }
 
     function test_editModeFallback() {
