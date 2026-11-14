@@ -7,7 +7,7 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 ## Why this exists
 
 The widget works, but the source is still concentrated: `settings/pages/portfolio.qml`
-(1,022 lines) and `main.qml` (1,015) carry most of the remaining behaviour, while
+(962 lines) and `main.qml` (1,015) carry most of the remaining behaviour, while
 `SingleStockView.qml` is down to 390 lines after the Phase 4 split. That has concrete
 costs:
 
@@ -323,7 +323,8 @@ update the fixture and the parser test together.
       wrapper and the file dialogs live in `settings/importExport/`; `window.js` is now
       `settings/components/SettingsWindow.js` and `PositionLine.qml` is in
       `ui/components/`. The tree matches the target; the portfolio page still holds its
-      data logic (~1,022 lines) and can be split further. The remaining views are in
+      data logic (now with the parsing/filtering/sorting moved to
+      `settings/portfolio/portfolioModel.js` and covered by tests). The remaining views are in
       their target folders too (`ui/list`, `ui/panel`, `ui/tooltip`).
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
       on every pull request (done ahead of the other phases).

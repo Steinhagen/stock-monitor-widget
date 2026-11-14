@@ -142,38 +142,12 @@ Item {
 
     onQuoteDataChanged: page.updateFilteredLots()
 
-    function safeParsePortfolio(data) {
-        if (!data) return [];
-        try {
-            return JSON.parse(data);
-        } catch (e) {
-            console.error("Failed to parse portfolio data:", e);
-            return [];
-        }
-    }
+    function safeParsePortfolio(data) { return PortfolioModel.parse(data); }
 
     // Parses a price typed with either "." or "," as the decimal separator, regardless of
     // the system locale (avoids the DoubleValidator/parseFloat locale mismatch where a
     // locale using "," for decimals gets silently truncated by JS's locale-independent parseFloat).
-    function parseLocaleNumber(text) {
-        if (!text) return NaN;
-        var str = String(text).trim();
-        var lastComma = str.lastIndexOf(",");
-        var lastDot = str.lastIndexOf(".");
-        if (lastComma !== -1 && lastDot !== -1) {
-            // Both separators present: whichever comes last is the decimal separator,
-            // the other one is a thousands grouping separator to strip.
-            if (lastComma > lastDot) {
-                str = str.replace(/\./g, "").replace(",", ".");
-            } else {
-                str = str.replace(/,/g, "");
-            }
-        } else if (lastComma !== -1) {
-            // Only a comma: treat it as the decimal separator (e.g. "50,21")
-            str = str.replace(",", ".");
-        }
-        return parseFloat(str);
-    }
+    function parseLocaleNumber(text) { return PortfolioModel.parseLocaleNumber(text); }
 
     function refreshPortfolioList() {
         page.portfolioList = page.safeParsePortfolio(page.cfg_portfolioData);
@@ -181,20 +155,12 @@ Item {
     }
 
     function updateFilteredLots() {
-        var query = page.lotSearch.trim().toLowerCase();
-        var result = [];
-        for (var i = 0; i < page.portfolioList.length; i++) {
-            var lot = page.portfolioList[i];
-            if (query !== "") {
-                var haystack = (String(lot.ticker || "") + " " + String(lot.details || "")
-                                + " " + String(lot.currency || "")).toLowerCase();
-                if (haystack.indexOf(query) < 0) continue;
-            }
-            var copy = Object.assign({}, lot);
-            copy._index = i;
-            result.push(copy);
-        }
-        if (page.lotSortKey !== "") result.sort(page.compareLots);
+        var result = PortfolioModel.filterLots(page.portfolioList, page.lotSearch);
+        if (page.lotSortKey !== "")
+            result.sort(function(a, b) {
+                return PortfolioModel.compareLots(a, b, page.lotSortKey,
+                                                  page.lotSortAscending, page.lotMarketData);
+            });
         page.filteredLots = result;
     }
 
@@ -392,22 +358,11 @@ Item {
     // Formats an amount with two decimals and, when the widget's "format prices with
     // commas" setting is on, groups the thousands: 325183.75 -> "325,183.75".
     function formatNumber(amount) {
-        var num = Number(amount);
-        if (isNaN(num)) return String(amount);
-        var formatted = Math.abs(num).toFixed(2);
-        if (page.cfg_formatPrices) {
-            var parts = formatted.split(".");
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-            formatted = parts.join(".");
-        }
-        return (num < 0 ? "-" : "") + formatted;
+        return PortfolioModel.formatNumber(amount, page.cfg_formatPrices);
     }
 
     function moneyText(currency, amount) {
-        var num = Number(amount);
-        if (isNaN(num)) return Currency.symbol(currency) + String(amount);
-        // Keep the sign in front of the currency symbol, like the widget's formatMoney.
-        return (num < 0 ? "-" : "") + Currency.symbol(currency) + page.formatNumber(Math.abs(num));
+        return PortfolioModel.moneyText(currency, amount, page.cfg_formatPrices);
     }
 
     function lotValueText(lot) {
@@ -435,27 +390,12 @@ Item {
     }
 
     function sortValue(lot, key) {
-        if (key === "symbol") return String(lot.ticker || "").toLowerCase();
-        if (key === "shares") return Number(lot.shares) || 0;
-        if (key === "averageCost") return Number(lot.averageCost) || 0;
-        if (key === "currency") return String(lot.currency || "USD");
-        if (key === "date") {
-            var time = Date.parse(String(lot.addedDate || ""));
-            return isNaN(time) ? null : time;
-        }
-        var market = page.lotMarketData(lot);
-        if (!market) return null;
-        return key === "value" ? market.value : market.gain;
+        return PortfolioModel.sortValue(lot, key, page.lotMarketData);
     }
 
     function compareLots(a, b) {
-        var av = page.sortValue(a, page.lotSortKey);
-        var bv = page.sortValue(b, page.lotSortKey);
-        if (av === null && bv === null) return 0;
-        if (av === null) return 1;
-        if (bv === null) return -1;
-        var result = (typeof av === "string") ? av.localeCompare(bv) : av - bv;
-        return page.lotSortAscending ? result : -result;
+        return PortfolioModel.compareLots(a, b, page.lotSortKey, page.lotSortAscending,
+                                          page.lotMarketData);
     }
 
     function toggleSort(key) {

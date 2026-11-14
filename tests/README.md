@@ -52,6 +52,7 @@ tests/
 | `tst_appactions.qml` | selection, mouse actions, chart buttons, layout width |
 | `tst_refresh.qml` | refresh cycle, hours gate, single/list branches |
 | `tst_theme.qml` | contrast math, light/dark palettes, Plasma surface |
+| `tst_portfolio_model.qml` | lot parsing, filtering, null-last sorting, money formatting |
 | `tst_chartcanvas.qml` | chart drawing with a fake 2D context |
 
 Tests are offline: the provider parsers are fed fixture bodies, the request URLs are
