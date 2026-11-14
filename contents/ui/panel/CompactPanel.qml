@@ -115,7 +115,7 @@ MouseArea {
     property real widestBadge: 0
     Text { id: probeTicker; visible: false; font.pixelSize: 9; font.weight: Font.Bold; renderType: Text.NativeRendering }
     Text { id: probeTag; visible: false; font.pixelSize: 8; font.weight: Font.Bold; renderType: Text.NativeRendering }
-    Text { id: probePrice; visible: false; font.pixelSize: 11; font.weight: Font.Bold; renderType: Text.NativeRendering }
+    Text { id: probePrice; visible: false; font.pixelSize: 11; renderType: Text.NativeRendering }
     Text { id: probeBadge; visible: false; font.pixelSize: 10; renderType: Text.NativeRendering }
 
     function measureWidest() {
@@ -247,7 +247,6 @@ MouseArea {
                     text: applet.displayTicker(applet.isMultiMode ? applet.panelTicker : applet.singleTicker)
                     color: applet.panelTextColor
                     font.pixelSize: 9
-                    font.weight: Font.Bold
                     renderType: Text.NativeRendering
                     opacity: 0.6
                     Layout.alignment: Qt.AlignBottom
@@ -322,7 +321,6 @@ MouseArea {
                     font.pixelSize: applet.isVerticalPanel
                                      ? (compactRoot.shownPrice.length > 7 ? 8 : 9)
                                      : 11
-                    font.weight: Font.Bold
                     renderType: Text.NativeRendering
                     // Ensure the price text is fully opaque; color is controlled by the line above
                     // Cached startup values are dimmed, so they never read as live.
