@@ -309,8 +309,9 @@ update the fixture and the parser test together.
       `platform/Theme.qml` (system palette injected, WCAG helpers tested) and the theme
       migration to `AppConfig`, and the news list/rows/menu moved to
       `ui/single/NewsPane.qml`. The chart Canvas and all of its drawing moved to
-      `ui/single/ChartCanvas.qml`. Next: the header, the quote block and the shared
-      components.
+      `ui/single/ChartCanvas.qml`, the header to `ui/single/StockHeader.qml` and the
+      quote rows to `ui/single/QuoteBlock.qml`. Next: the shared components and the
+      remaining `rootItem.*` reach-through.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the
       portfolio page, move backup into `settings/importExport/`.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
