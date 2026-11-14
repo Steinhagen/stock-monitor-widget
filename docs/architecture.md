@@ -308,8 +308,9 @@ update the fixture and the parser test together.
 - [ ] **Phase 4 — view decomposition.** In progress: the colour system moved to
       `platform/Theme.qml` (system palette injected, WCAG helpers tested) and the theme
       migration to `AppConfig`, and the news list/rows/menu moved to
-      `ui/single/NewsPane.qml`. Next: the chart canvas, the header and the quote block,
-      then the shared components.
+      `ui/single/NewsPane.qml`. The chart Canvas and all of its drawing moved to
+      `ui/single/ChartCanvas.qml`. Next: the header, the quote block and the shared
+      components.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the
       portfolio page, move backup into `settings/importExport/`.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
