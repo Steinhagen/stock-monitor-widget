@@ -1,10 +1,10 @@
 import QtQuick
-import "domain/news.js" as NewsModel
-import "core/Cache.js" as Cache
-import "providers/news/registry.js" as NewsRegistry
-import "providers/yahoo/news.js" as YahooNews
-import "providers/bvb/issuer.js" as BvbIssuer
-import "providers/google/news.js" as GoogleNews
+import "../domain/news.js" as NewsModel
+import "../core/Cache.js" as Cache
+import "../providers/news/registry.js" as NewsRegistry
+import "../providers/yahoo/news.js" as YahooNews
+import "../providers/bvb/issuer.js" as BvbIssuer
+import "../providers/google/news.js" as GoogleNews
 
 Item {
     id: newsController

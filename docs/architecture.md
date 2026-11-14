@@ -323,7 +323,8 @@ update the fixture and the parser test together.
       wrapper and the file dialogs live in `settings/importExport/`; `window.js` is now
       `settings/components/SettingsWindow.js` and `PositionLine.qml` is in
       `ui/components/`. The tree matches the target; the portfolio page still holds its
-      data logic (~1,022 lines) and can be split further.
+      data logic (~1,022 lines) and can be split further. The remaining views are in
+      their target folders too (`ui/list`, `ui/panel`, `ui/tooltip`).
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and
       on every pull request (done ahead of the other phases).
 

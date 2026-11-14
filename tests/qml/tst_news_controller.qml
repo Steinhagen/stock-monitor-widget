@@ -28,7 +28,7 @@ TestCase {
     function makeController() {
         var applet = createTemporaryObject(fakeApplet, this);
         verify(applet !== null);
-        var component = Qt.createComponent(Qt.resolvedUrl("../../contents/ui/NewsController.qml"));
+        var component = Qt.createComponent(Qt.resolvedUrl("../../contents/ui/controllers/NewsController.qml"));
         compare(component.status, Component.Ready, component.errorString());
         var controller = component.createObject(this, { "applet": applet });
         verify(controller !== null);

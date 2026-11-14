@@ -2,7 +2,7 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
-import "core/Text.js" as Text
+import "../core/Text.js" as Text
 
 Rectangle {
     id: multiStockRoot

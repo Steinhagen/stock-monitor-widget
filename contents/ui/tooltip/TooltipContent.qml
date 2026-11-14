@@ -1,5 +1,5 @@
 import QtQuick
-import "core/Text.js" as Text
+import "../core/Text.js" as Text
 
 Item {
     id: tooltipContent

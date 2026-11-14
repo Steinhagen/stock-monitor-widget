@@ -6,7 +6,6 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
-import "analyst"
 import "single"
 
 Rectangle {
@@ -347,7 +346,7 @@ Rectangle {
                 }
 
                 // The marker overlay owns its geometry, shapes and details popup.
-                AnalystMarkers {
+                AnalystOverlay {
                     id: analystMarkers
                     anchors.fill: parent
                     z: 110

@@ -9,10 +9,12 @@ import "domain/portfolio.js" as Portfolio
 import "domain/exchanges.js" as Exchanges
 import "domain/symbols.js" as Symbols
 import "domain/format.js" as Format
-import "analyst"
 import "app"
 import "state"
 import "controllers"
+import "list"
+import "panel"
+import "tooltip"
 
 PlasmoidItem {
     id: root
