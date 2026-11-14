@@ -1128,6 +1128,40 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: contents/ui/single/AnalystOverlay.qml
+msgid "Target raised"
+msgstr ""
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Target lowered"
+msgstr ""
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Target maintained"
+msgstr ""
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "New target"
+msgstr ""
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Showing the latest %1 of %2 actions"
+msgstr ""
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Showing %1 action"
+msgid_plural "Showing %1 actions"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Click for more details"
+msgstr ""
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Analyst price targets"
+msgstr ""
+
+#: contents/ui/single/AnalystOverlay.qml
 msgid "Consensus %1"
 msgstr ""
 
@@ -1140,10 +1174,6 @@ msgid "%1 analyst"
 msgid_plural "%1 analysts"
 msgstr[0] ""
 msgstr[1] ""
-
-#: contents/ui/single/AnalystOverlay.qml
-msgid "Analyst price targets"
-msgstr ""
 
 #: contents/ui/single/AnalystOverlay.qml
 msgid "%1 action"

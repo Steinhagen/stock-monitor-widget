@@ -22,6 +22,9 @@ Item {
 
     property var selectedMark: null
     property point popupAnchor: Qt.point(0, 0)
+    // The marker under the cursor, for the hover card.
+    property var hoverMark: null
+    property point hoverAnchor: Qt.point(0, 0)
 
     readonly property color popupBackground: applet && applet.appDrawnSurface
                                              ? (applet.isLightTheme ? "#ffffff" : "#1a1a1a")
@@ -35,6 +38,11 @@ Item {
         font.pixelSize: 9
         font.family: "sans-serif"
     }
+    FontMetrics { id: firmMetrics; font.pixelSize: 11; font.bold: true; font.family: "sans-serif" }
+    FontMetrics { id: captionMetrics; font.pixelSize: 10; font.bold: true; font.family: "sans-serif" }
+    FontMetrics { id: smallMetrics; font.pixelSize: 9; font.family: "sans-serif" }
+    FontMetrics { id: oldMetrics; font.pixelSize: 10; font.family: "sans-serif" }
+    FontMetrics { id: priceMetrics; font.pixelSize: 12; font.bold: true; font.family: "sans-serif" }
 
     onMarkersShownChanged: if (!markersShown && detailsPopup) detailsPopup.close()
 
@@ -267,7 +275,7 @@ Item {
             result.push({
                 x: g.xSum / g.entries.length,
                 direction: direction,
-                entries: g.entries.slice(0, 6),
+                entries: g.entries,
                 total: g.entries.length,
                 newest: g.entries[0]
             });
@@ -320,6 +328,67 @@ Item {
                      ? i18np("%1 analyst action", "%1 analyst actions", mark.total) + " · "
                      : "";
         return prefix + latest.firm + " · " + targetText(latest);
+    }
+
+    function hoverCaption(entry) {
+        if (!entry) return "";
+        if (entry.kind === "up") return i18n("Target raised");
+        if (entry.kind === "down") return i18n("Target lowered");
+        if (entry.kind === "maintain") return i18n("Target maintained");
+        return i18n("New target");
+    }
+
+    function hoverGlyph(entry) {
+        if (!entry) return "";
+        if (entry.kind === "up") return "▲";
+        if (entry.kind === "down") return "▼";
+        if (entry.kind === "maintain") return "—";
+        return "+";
+    }
+
+    function hoverFooterCount(mark) {
+        if (!mark) return "";
+        return mark.total > 3
+               ? i18n("Showing the latest %1 of %2 actions", 3, mark.total)
+               : i18np("Showing %1 action", "Showing %1 actions", mark.total);
+    }
+
+    // Width of one action row, without the card padding.
+    function rowWidth(entry) {
+        if (!entry) return 0;
+        var firmDate = firmMetrics.advanceWidth(entry.firm) + 8 + 66;
+        var caption = captionMetrics.advanceWidth(hoverCaption(entry));
+        var prices = oldMetrics.advanceWidth(money(entry.prior)) + 12
+                   + priceMetrics.advanceWidth(money(entry.target));
+        return 32 + Math.max(firmDate, caption, prices);
+    }
+
+    function hoverCardWidth(mark) {
+        if (!mark) return 240;
+        var width = Math.max(smallMetrics.advanceWidth(hoverFooterCount(mark)),
+                             smallMetrics.advanceWidth(i18n("Click for more details")));
+        var shown = Math.min(3, mark.entries.length);
+        for (var i = 0; i < shown; i++)
+            width = Math.max(width, rowWidth(mark.entries[i]));
+        return Math.max(220, Math.min(300, width + 20));
+    }
+
+    function detailsWidth(mark) {
+        var width = firmMetrics.advanceWidth(i18n("Analyst price targets")) + 70;
+        width = Math.max(width, Math.min(300, smallMetrics.advanceWidth(summaryText())));
+        if (mark) {
+            for (var i = 0; i < mark.entries.length; i++) {
+                var entry = mark.entries[i];
+                var firmDate = firmMetrics.advanceWidth(entry.firm) + 8
+                             + smallMetrics.advanceWidth(entryDate(entry));
+                var caption = captionMetrics.advanceWidth(hoverCaption(entry));
+                var prices = oldMetrics.advanceWidth(money(entry.prior)) + 12
+                           + priceMetrics.advanceWidth(money(entry.target));
+                var rating = smallMetrics.advanceWidth(ratingText(entry));
+                width = Math.max(width, 32 + Math.max(firmDate, caption, prices, rating));
+            }
+        }
+        return Math.max(260, Math.min(340, width + 20));
     }
 
     function summaryText() {
@@ -415,20 +484,186 @@ Item {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onClicked: analystRoot.openPopup(marker, marker.modelData)
+                onClicked: {
+                    analystRoot.hoverMark = null;
+                    analystRoot.openPopup(marker, marker.modelData);
+                }
             }
 
-            HoverHandler { id: markerHover }
-            ToolTip.visible: markerHover.hovered
-            ToolTip.text: analystRoot.markerTooltip(marker.modelData)
+            HoverHandler {
+                id: markerHover
+                onHoveredChanged: {
+                    if (hovered) {
+                        analystRoot.hoverMark = marker.modelData;
+                        analystRoot.hoverAnchor = marker.mapToItem(analystRoot, marker.width / 2, 0);
+                    } else if (analystRoot.hoverMark !== null) {
+                        analystRoot.hoverMark = null;
+                    }
+                }
+            }
         }
     }
 
-    // Details popup for the selected marker group.
+    // Hover card for the marker under the cursor: up to three latest actions, with a
+    // footer pointing at the full list.
+    Item {
+        id: hoverCard
+        readonly property var mark: analystRoot.hoverMark
+        visible: analystRoot.hoverMark !== null && !detailsPopup.opened
+        z: 200
+        width: analystRoot.hoverCardWidth(hoverCard.mark)
+        height: cardContent.implicitHeight + 20
+        x: Math.max(4, Math.min(analystRoot.width - width - 4,
+                                analystRoot.hoverAnchor.x - width / 2))
+        // Prefer above the marker; drop below it when the card would leave the chart.
+        y: analystRoot.hoverAnchor.y - height - 10 >= 4
+           ? analystRoot.hoverAnchor.y - height - 10
+           : Math.max(4, Math.min(analystRoot.height - height - 4, analystRoot.hoverAnchor.y + 16))
+
+        Rectangle {
+            anchors.fill: parent
+            radius: 8
+            color: analystRoot.popupBackground
+            border.width: 1
+            border.color: applet && applet.isLightTheme
+                          ? Qt.rgba(0, 0, 0, 0.16) : Qt.rgba(1, 1, 1, 0.18)
+        }
+
+        Column {
+            id: cardContent
+            x: 10; y: 10
+            width: parent.width - 20
+            spacing: 5
+
+            Repeater {
+                model: hoverCard.mark ? hoverCard.mark.entries.slice(0, 3) : []
+
+                delegate: Column {
+                    id: hoverEntry
+                    required property var modelData
+                    required property int index
+                    readonly property color accent: modelData.kind === "up"
+                                                    ? applet.positiveColor
+                                                    : (modelData.kind === "down"
+                                                       ? applet.negativeColor
+                                                       : applet.secondaryTextColor)
+                    width: cardContent.width
+                    spacing: 2
+
+                    Rectangle {
+                        width: parent.width
+                        height: hoverEntry.index > 0 ? 1 : 0
+                        color: applet && applet.isLightTheme
+                               ? Qt.rgba(0, 0, 0, 0.10) : Qt.rgba(1, 1, 1, 0.10)
+                    }
+
+                    Row {
+                        width: parent.width
+                        spacing: 8
+
+                        Rectangle {
+                            width: 24; height: 24; radius: 12
+                            anchors.verticalCenter: parent.verticalCenter
+                            color: Qt.rgba(hoverEntry.accent.r, hoverEntry.accent.g,
+                                           hoverEntry.accent.b, 0.16)
+                            border.width: 1
+                            border.color: hoverEntry.accent
+                            Text {
+                                anchors.centerIn: parent
+                                text: analystRoot.hoverGlyph(hoverEntry.modelData)
+                                color: hoverEntry.accent
+                                font.pixelSize: 10
+                                font.bold: true
+                            }
+                        }
+
+                        Column {
+                            width: parent.width - 32
+                            spacing: 1
+
+                            Row {
+                                width: parent.width
+                                Text {
+                                    width: parent.width - 66
+                                    text: hoverEntry.modelData.firm
+                                    color: analystRoot.popupText
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    width: 66
+                                    text: analystRoot.entryDate(hoverEntry.modelData)
+                                    color: applet ? applet.secondaryTextColor : analystRoot.popupText
+                                    font.pixelSize: 9
+                                    horizontalAlignment: Text.AlignRight
+                                }
+                            }
+
+                            Text {
+                                width: parent.width
+                                text: analystRoot.hoverCaption(hoverEntry.modelData)
+                                color: hoverEntry.accent
+                                font.pixelSize: 10
+                                font.weight: Font.DemiBold
+                                elide: Text.ElideRight
+                            }
+
+                            Row {
+                                spacing: 6
+                                Text {
+                                    visible: hoverEntry.modelData.prior > 0
+                                    text: analystRoot.money(hoverEntry.modelData.prior)
+                                    color: applet ? applet.secondaryTextColor : analystRoot.popupText
+                                    font.pixelSize: 10
+                                }
+                                Text {
+                                    visible: hoverEntry.modelData.prior > 0
+                                    text: "→"
+                                    color: applet ? applet.secondaryTextColor : analystRoot.popupText
+                                    font.pixelSize: 10
+                                }
+                                Text {
+                                    text: analystRoot.money(hoverEntry.modelData.target)
+                                    color: hoverEntry.accent
+                                    font.pixelSize: 12
+                                    font.weight: Font.DemiBold
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            Column {
+                width: parent.width
+                spacing: 1
+                Text {
+                    width: parent.width
+                    visible: hoverCard.mark && hoverCard.mark.total > 3
+                    text: analystRoot.hoverFooterCount(hoverCard.mark)
+                    color: applet ? applet.secondaryTextColor : analystRoot.popupText
+                    font.pixelSize: 9
+                    wrapMode: Text.WordWrap
+                }
+                Text {
+                    width: parent.width
+                    text: i18n("Click for more details")
+                    color: applet ? applet.secondaryTextColor : analystRoot.popupText
+                    font.pixelSize: 9
+                    wrapMode: Text.WordWrap
+                }
+            }
+        }
+    }
+
+    // Details popup for the selected marker group, using the same card language as
+    // the hover card: direction badge, firm/date, action caption and old -> new target.
     Popup {
         id: detailsPopup
         parent: analystRoot
-        width: Math.min(340, Math.max(180, analystRoot.width - 16))
+        width: Math.min(analystRoot.detailsWidth(detailsPopup.mark),
+                        Math.max(200, analystRoot.width - 16))
         padding: 10
         modal: false
         focus: true
@@ -437,15 +672,15 @@ Item {
 
         onOpened: analystRoot.positionPopup()
         onHeightChanged: if (opened) analystRoot.positionPopup()
+        onWidthChanged: if (opened) analystRoot.positionPopup()
         onClosed: analystRoot.selectedMark = null
 
         background: Rectangle {
             color: analystRoot.popupBackground
-            radius: 6
+            radius: 8
             border.width: 1
-            border.color: Qt.rgba(analystRoot.applet.secondaryTextColor.r,
-                                  analystRoot.applet.secondaryTextColor.g,
-                                  analystRoot.applet.secondaryTextColor.b, 0.35)
+            border.color: applet && applet.isLightTheme
+                          ? Qt.rgba(0, 0, 0, 0.16) : Qt.rgba(1, 1, 1, 0.18)
         }
 
         contentItem: ColumnLayout {
@@ -460,7 +695,7 @@ Item {
                     Layout.fillWidth: true
                     text: i18n("Analyst price targets")
                     color: analystRoot.popupText
-                    font.pixelSize: 12
+                    font.pixelSize: 11
                     font.bold: true
                     elide: Text.ElideRight
                 }
@@ -481,15 +716,40 @@ Item {
                 wrapMode: Text.WordWrap
             }
 
-            Repeater {
-                model: detailsPopup.mark ? detailsPopup.mark.entries : []
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.preferredHeight: Math.min(entriesColumn.implicitHeight, 360)
+                spacing: entriesFlick.overflows ? 10 : 0
+
+                Flickable {
+                    id: entriesFlick
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    contentWidth: width
+                    contentHeight: entriesColumn.implicitHeight
+                    clip: true
+                    boundsBehavior: Flickable.StopAtBounds
+                    readonly property bool overflows: contentHeight > height
+
+                    ColumnLayout {
+                        id: entriesColumn
+                        width: entriesFlick.width
+                        spacing: 6
+
+                    Repeater {
+                        model: detailsPopup.mark ? detailsPopup.mark.entries : []
 
                 delegate: ColumnLayout {
                     id: popupEntry
                     required property var modelData
                     required property int index
+                    readonly property color accent: modelData.kind === "up"
+                                                    ? applet.positiveColor
+                                                    : (modelData.kind === "down"
+                                                       ? applet.negativeColor
+                                                       : applet.secondaryTextColor)
                     Layout.fillWidth: true
-                    spacing: 1
+                    spacing: 4
 
                     Rectangle {
                         Layout.fillWidth: true
@@ -501,39 +761,127 @@ Item {
 
                     RowLayout {
                         Layout.fillWidth: true
-                        spacing: 6
+                        spacing: 8
 
-                        Text {
+                        Rectangle {
+                            width: 24; height: 24; radius: 12
+                            Layout.alignment: Qt.AlignVCenter
+                            color: Qt.rgba(popupEntry.accent.r, popupEntry.accent.g,
+                                           popupEntry.accent.b, 0.16)
+                            border.width: 1
+                            border.color: popupEntry.accent
+                            Text {
+                                anchors.centerIn: parent
+                                text: analystRoot.hoverGlyph(popupEntry.modelData)
+                                color: popupEntry.accent
+                                font.pixelSize: 10
+                                font.bold: true
+                            }
+                        }
+
+                        ColumnLayout {
                             Layout.fillWidth: true
-                            text: popupEntry.modelData.firm
-                            color: analystRoot.popupText
-                            font.pixelSize: 10
-                            font.bold: true
-                            elide: Text.ElideRight
-                        }
-                        Text {
-                            text: analystRoot.entryDate(popupEntry.modelData)
-                            color: analystRoot.applet.secondaryTextColor
-                            font.pixelSize: 9
+                            spacing: 1
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 8
+                                Text {
+                                    Layout.fillWidth: true
+                                    text: popupEntry.modelData.firm
+                                    color: analystRoot.popupText
+                                    font.pixelSize: 11
+                                    font.bold: true
+                                    elide: Text.ElideRight
+                                }
+                                Text {
+                                    text: analystRoot.entryDate(popupEntry.modelData)
+                                    color: analystRoot.applet.secondaryTextColor
+                                    font.pixelSize: 9
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                text: analystRoot.hoverCaption(popupEntry.modelData)
+                                color: popupEntry.accent
+                                font.pixelSize: 10
+                                font.weight: Font.DemiBold
+                                elide: Text.ElideRight
+                            }
+
+                            RowLayout {
+                                Layout.fillWidth: true
+                                spacing: 6
+                                Text {
+                                    visible: popupEntry.modelData.prior > 0
+                                    text: analystRoot.money(popupEntry.modelData.prior)
+                                    color: analystRoot.applet.secondaryTextColor
+                                    font.pixelSize: 10
+                                }
+                                Text {
+                                    visible: popupEntry.modelData.prior > 0
+                                    text: "→"
+                                    color: analystRoot.applet.secondaryTextColor
+                                    font.pixelSize: 10
+                                }
+                                Text {
+                                    text: analystRoot.money(popupEntry.modelData.target)
+                                    color: popupEntry.accent
+                                    font.pixelSize: 12
+                                    font.weight: Font.DemiBold
+                                }
+                            }
+
+                            Text {
+                                Layout.fillWidth: true
+                                visible: text !== ""
+                                text: analystRoot.ratingText(popupEntry.modelData)
+                                color: analystRoot.applet.secondaryTextColor
+                                font.pixelSize: 9
+                                opacity: 0.8
+                                wrapMode: Text.WordWrap
+                            }
                         }
                     }
-
-                    Text {
-                        Layout.fillWidth: true
-                        text: analystRoot.targetText(popupEntry.modelData)
-                        color: analystRoot.applet.secondaryTextColor
-                        font.pixelSize: 9
-                        wrapMode: Text.WordWrap
+                }
                     }
+                }
+            }
 
-                    Text {
-                        Layout.fillWidth: true
-                        visible: text !== ""
-                        text: analystRoot.ratingText(popupEntry.modelData)
-                        color: analystRoot.applet.secondaryTextColor
-                        font.pixelSize: 9
-                        opacity: 0.8
-                        wrapMode: Text.WordWrap
+                Item {
+                    id: entriesBar
+                    visible: entriesFlick.overflows
+                    Layout.preferredWidth: visible ? 8 : 0
+                    Layout.minimumWidth: visible ? 8 : 0
+                    Layout.maximumWidth: visible ? 8 : 0
+                    Layout.fillHeight: true
+
+                    Rectangle {
+                        id: entriesHandle
+                        x: 1
+                        width: 6
+                        radius: 3
+                        color: analystRoot.popupText
+                        opacity: 0.35
+                        height: Math.max(24, entriesFlick.visibleArea.heightRatio * entriesBar.height)
+                        y: entriesFlick.visibleArea.yPosition * (entriesBar.height - height)
+
+                        MouseArea {
+                            anchors.fill: parent
+                            cursorShape: Qt.PointingHandCursor
+                            property real lastY: 0
+                            onPressed: lastY = mouse.y
+                            onPositionChanged: if (pressed) {
+                                var maxScroll = entriesFlick.contentHeight - entriesFlick.height;
+                                var maxHandle = entriesBar.height - entriesHandle.height;
+                                if (maxScroll > 0 && maxHandle > 0) {
+                                    entriesFlick.contentY = Math.max(0, Math.min(maxScroll,
+                                        entriesFlick.contentY + (mouse.y - lastY) / maxHandle * maxScroll));
+                                    lastY = mouse.y;
+                                }
+                            }
+                        }
                     }
                 }
             }

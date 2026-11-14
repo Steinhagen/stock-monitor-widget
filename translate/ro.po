@@ -1134,6 +1134,41 @@ msgstr[1] "%1 acțiuni de analist"
 msgstr[2] "%1 de acțiuni de analist"
 
 #: contents/ui/single/AnalystOverlay.qml
+msgid "Target raised"
+msgstr "Țintă ridicată"
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Target lowered"
+msgstr "Țintă redusă"
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Target maintained"
+msgstr "Țintă menținută"
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "New target"
+msgstr "Țintă nouă"
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Showing the latest %1 of %2 actions"
+msgstr "Se afișează ultimele %1 din %2 acțiuni"
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Showing %1 action"
+msgid_plural "Showing %1 actions"
+msgstr[0] "Se afișează %1 acțiune"
+msgstr[1] "Se afișează %1 acțiuni"
+msgstr[2] "Se afișează %1 de acțiuni"
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Click for more details"
+msgstr "Faceți clic pentru mai multe detalii"
+
+#: contents/ui/single/AnalystOverlay.qml
+msgid "Analyst price targets"
+msgstr "Ținte de preț ale analiștilor"
+
+#: contents/ui/single/AnalystOverlay.qml
 msgid "Consensus %1"
 msgstr "Consens %1"
 
@@ -1147,10 +1182,6 @@ msgid_plural "%1 analysts"
 msgstr[0] "%1 analist"
 msgstr[1] "%1 analiști"
 msgstr[2] "%1 de analiști"
-
-#: contents/ui/single/AnalystOverlay.qml
-msgid "Analyst price targets"
-msgstr "Ținte de preț ale analiștilor"
 
 #: contents/ui/single/AnalystOverlay.qml
 msgid "%1 action"
@@ -1366,6 +1397,30 @@ msgstr[2] "%1 de acțiuni · mediu %2"
 #: contents/ui/tooltip/TooltipContent.qml
 msgid "Updated"
 msgstr "Actualizat"
+
+#~ msgid "Showing the latest %1 of %2 actions — click for details"
+#~ msgstr "Se afișează ultimele %1 din %2 acțiuni — faceți clic pentru detalii"
+
+#~ msgid "Showing %1 action — click for details"
+#~ msgid_plural "Showing %1 actions — click for details"
+#~ msgstr[0] "Se afișează %1 acțiune — faceți clic pentru mai multe detalii"
+#~ msgstr[1] "Se afișează %1 acțiuni — faceți clic pentru mai multe detalii"
+#~ msgstr[2] "Se afișează %1 de acțiuni — faceți clic pentru mai multe detalii"
+
+#~ msgid "Click for details"
+#~ msgstr "Faceți clic pentru detalii"
+
+#~ msgctxt "@item:analyst detail"
+#~ msgid "OLD"
+#~ msgstr "VECHE"
+
+#~ msgctxt "@item:analyst detail"
+#~ msgid "NEW"
+#~ msgstr "NOUĂ"
+
+#~ msgctxt "@item:analyst detail"
+#~ msgid "ACTIONS"
+#~ msgstr "ACȚIUNI"
 
 #~ msgid "Google News (search by company name)"
 #~ msgstr "Google News (căutare după numele companiei)"
