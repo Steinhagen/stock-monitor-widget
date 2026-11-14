@@ -698,6 +698,14 @@ msgid "Show the symbol in bold"
 msgstr ""
 
 #: contents/ui/settings/pages/panelView.qml
+msgid "Market status:"
+msgstr ""
+
+#: contents/ui/settings/pages/panelView.qml
+msgid "Show the market status tag"
+msgstr ""
+
+#: contents/ui/settings/pages/panelView.qml
 msgid "Price and percentage:"
 msgstr ""
 

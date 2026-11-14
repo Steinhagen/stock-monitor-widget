@@ -244,6 +244,10 @@
             <label>Show the panel symbol in bold</label>
             <default>true</default>
         </entry>
+        <entry name="panelShowMarketStatus" type="Bool">
+            <label>Show the market status tag in the panel</label>
+            <default>true</default>
+        </entry>
         <entry name="formatPrices" type="Bool">
             <label>Format stock price with commas</label>
             <default>true</default>

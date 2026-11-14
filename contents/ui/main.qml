@@ -267,6 +267,7 @@ PlasmoidItem {
 
     property bool hideChangePercentage: app.config.hideChangePercentage
     property bool panelBoldSymbol: app.config.panelBoldSymbol
+    property bool panelShowMarketStatus: app.config.panelShowMarketStatus
     property bool hideTimestamps: app.config.hideTimestamps
     property bool formatPrices: app.config.formatPrices
     property bool hideDecimals: app.config.hideDecimals

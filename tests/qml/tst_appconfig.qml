@@ -18,6 +18,7 @@ TestCase {
         property int desktopThemeSource: -1
         property string multiTickers: ""
         property bool panelBoldSymbol: true
+        property bool panelShowMarketStatus: true
     }
 
     function make(configuration) {
@@ -49,6 +50,13 @@ TestCase {
         compare(config.showExtendedHours, false);
         // An intentionally emptied ticker list stays empty.
         compare(config.multiTickers, "");
+    }
+
+    function test_panelShowMarketStatus() {
+        compare(make(null).panelShowMarketStatus, true);
+        fake.panelShowMarketStatus = false;
+        compare(make(fake).panelShowMarketStatus, false);
+        fake.panelShowMarketStatus = true;
     }
 
     function test_panelBoldSymbol() {

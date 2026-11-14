@@ -702,6 +702,14 @@ msgid "Show the symbol in bold"
 msgstr "Afișează simbolul cu caractere aldine"
 
 #: contents/ui/settings/pages/panelView.qml
+msgid "Market status:"
+msgstr "Starea pieței:"
+
+#: contents/ui/settings/pages/panelView.qml
+msgid "Show the market status tag"
+msgstr "Afișează eticheta stării pieței"
+
+#: contents/ui/settings/pages/panelView.qml
 msgid "Price and percentage:"
 msgstr "Preț și procent:"
 

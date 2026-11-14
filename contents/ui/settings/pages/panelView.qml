@@ -22,6 +22,7 @@ Item {
     property alias cfg_fixedPanelWidth: fixedWidthSwitch.checked
     property alias cfg_panelWidth: panelWidthSpin.value
     property alias cfg_panelBoldSymbol: boldSymbolSwitch.checked
+    property alias cfg_panelShowMarketStatus: showStatusSwitch.checked
 
     ScrollView {
         anchors.fill: parent
@@ -36,6 +37,12 @@ Item {
                 id: boldSymbolSwitch
                 Kirigami.FormData.label: i18n("Symbol:")
                 text: i18n("Show the symbol in bold")
+            }
+
+            CheckBox {
+                id: showStatusSwitch
+                Kirigami.FormData.label: i18n("Market status:")
+                text: i18n("Show the market status tag")
             }
 
             CheckBox {

@@ -268,8 +268,10 @@ MouseArea {
                 // Session tag: AH = after-hours, PRE = pre-market, CLOSED = the
                 // exchange is not trading and there is no extended quote to show.
                 Text {
-                    visible: (compactRoot.ext !== undefined || compactRoot.marketClosed
-                              || applet.panelCurrentIsCached) && !applet.isVerticalPanel
+                    visible: applet.panelShowMarketStatus
+                             && (compactRoot.ext !== undefined || compactRoot.marketClosed
+                                 || applet.panelCurrentIsCached)
+                             && !applet.isVerticalPanel
                     // While the values come from the config snapshot, mark them as
                     // stale instead of showing a session tag computed from live data.
                     text: applet.panelCurrentIsCached
