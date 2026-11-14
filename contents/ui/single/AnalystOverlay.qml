@@ -24,6 +24,7 @@ Item {
     property point popupAnchor: Qt.point(0, 0)
     // The marker under the cursor, for the hover card.
     property var hoverMark: null
+    property var hoverSource: null
     property point hoverAnchor: Qt.point(0, 0)
 
     readonly property color popupBackground: applet && applet.appDrawnSurface
@@ -511,6 +512,7 @@ Item {
                 cursorShape: Qt.PointingHandCursor
                 onClicked: {
                     analystRoot.hoverMark = null;
+                    analystRoot.hoverSource = null;
                     analystRoot.openPopup(marker, marker.modelData);
                 }
             }
@@ -519,9 +521,11 @@ Item {
                 id: markerHover
                 onHoveredChanged: {
                     if (hovered) {
+                        analystRoot.hoverSource = marker;
                         analystRoot.hoverMark = marker.modelData;
                         analystRoot.hoverAnchor = marker.mapToItem(analystRoot, marker.width / 2, 0);
-                    } else if (analystRoot.hoverMark !== null) {
+                    } else if (analystRoot.hoverSource === marker) {
+                        analystRoot.hoverSource = null;
                         analystRoot.hoverMark = null;
                     }
                 }
