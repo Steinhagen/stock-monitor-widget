@@ -5,6 +5,8 @@ import QtQuick.Window
 import org.kde.kirigami as Kirigami
 import "../../domain/currencies.js" as Currency
 import "../components/SettingsWindow.js" as ConfigWindow
+import "../portfolio/portfolioModel.js" as PortfolioModel
+import "../portfolio/portfolioValuation.js" as PortfolioValuation
 
 Item {
     id: page
@@ -305,54 +307,24 @@ Item {
         return page.quoteData[String(ticker || "").trim().toUpperCase()] || null;
     }
 
-    function convertMoney(amount, from, to) {
-        if (typeof plasmoid === "undefined" || !plasmoid.configuration) return null;
+    // Cached exchange rates for the valuation; empty until the applet has any.
+    readonly property var exchangeRates: {
+        if (typeof plasmoid === "undefined" || !plasmoid.configuration) return ({});
         try {
             var cached = JSON.parse(plasmoid.configuration.exchangeRates || "{}");
-            return Currency.convert(amount, from, to, (cached && cached.rates) ? cached.rates : ({}));
+            return (cached && cached.rates) ? cached.rates : ({});
         } catch (e) {
-            return null;
+            return ({});
         }
+    }
+
+    function convertMoney(amount, from, to) {
+        return PortfolioValuation.convert(amount, from, to, page.exchangeRates);
     }
 
     // Returns the current value and gain for one lot in that lot's own currency.
     function lotMarketData(lot) {
-        var quote = page.quoteFor(lot.ticker);
-        if (!quote || !(quote.price > 0)) return null;
-
-        var lotCurrency = Currency.major(lot.currency) || "USD";
-        var quoteCurrency = Currency.major(quote.currency);
-        var price = quote.price * Currency.minorFactor(quote.currency);
-        if (quoteCurrency !== "" && quoteCurrency !== lotCurrency) {
-            price = page.convertMoney(price, quoteCurrency, lotCurrency);
-            if (price === null) return null;
-        }
-
-        var shares = Number(lot.shares) || 0;
-        var average = Number(lot.averageCost) || 0;
-        var cost = average * shares;
-        var value = price * shares;
-        var gain = (price - average) * shares;
-
-        var previousClose = Number(quote.previousClose) || 0;
-        var previousPrice = previousClose > 0 ? previousClose * Currency.minorFactor(quote.currency) : null;
-        if (previousPrice !== null && quoteCurrency !== "" && quoteCurrency !== lotCurrency)
-            previousPrice = page.convertMoney(previousPrice, quoteCurrency, lotCurrency);
-        var dayGain = (previousPrice !== null && previousPrice > 0)
-                      ? (price - previousPrice) * shares : null;
-        var dayPercent = (dayGain !== null && previousPrice > 0)
-                         ? (dayGain / (previousPrice * shares)) * 100 : 0;
-
-        return {
-            price: price,
-            value: value,
-            gain: gain,
-            percent: cost > 0 ? (gain / cost) * 100 : 0,
-            perShare: price - average,
-            dayGain: dayGain,
-            dayPercent: dayPercent,
-            currency: lotCurrency
-        };
+        return PortfolioValuation.lotMarketData(lot, page.quoteFor(lot.ticker), page.exchangeRates);
     }
 
     // Formats an amount with two decimals and, when the widget's "format prices with
@@ -409,58 +381,8 @@ Item {
 
     // Totals for the summary line, in the configured portfolio currency.
     function portfolioTotals() {
-        var target = Currency.major(page.cfg_portfolioCurrency) || "USD";
-        var result = {
-            currency: target,
-            cost: 0,
-            value: 0,
-            gain: 0,
-            gainPercent: 0,
-            day: 0,
-            dayPercent: 0
-        };
-        if (page.portfolioList.length === 0) return result;
-
-        var cost = 0, value = 0, day = 0;
-        var costKnown = true, valueKnown = true, dayKnown = true;
-        for (var i = 0; i < page.portfolioList.length; i++) {
-            var lot = page.portfolioList[i];
-            var lotCurrency = Currency.major(lot.currency) || "USD";
-            var shares = Number(lot.shares) || 0;
-            var average = Number(lot.averageCost) || 0;
-
-            var convertedCost = page.convertMoney(average * shares, lotCurrency, target);
-            if (convertedCost === null) costKnown = false;
-            else cost += convertedCost;
-
-            var market = page.lotMarketData(lot);
-            if (!market) {
-                valueKnown = false;
-                dayKnown = false;
-                continue;
-            }
-
-            var convertedValue = page.convertMoney(market.value, market.currency, target);
-            if (convertedValue === null) valueKnown = false;
-            else value += convertedValue;
-
-            if (market.dayGain === null) {
-                dayKnown = false;
-            } else {
-                var convertedDay = page.convertMoney(market.dayGain, market.currency, target);
-                if (convertedDay === null) dayKnown = false;
-                else day += convertedDay;
-            }
-        }
-
-        result.cost = costKnown ? cost : null;
-        result.value = valueKnown ? value : null;
-        result.gain = (costKnown && valueKnown) ? value - cost : null;
-        result.gainPercent = (result.gain !== null && cost > 0) ? ((value - cost) / cost) * 100 : 0;
-        result.day = dayKnown ? day : null;
-        result.dayPercent = (result.day !== null && valueKnown && (value - day) > 0)
-                            ? (day / (value - day)) * 100 : 0;
-        return result;
+        return PortfolioValuation.totals(page.portfolioList, page.quoteData,
+                                         page.cfg_portfolioCurrency, page.exchangeRates);
     }
 
     function summaryMoney(value) {
