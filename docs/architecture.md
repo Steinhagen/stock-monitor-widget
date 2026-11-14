@@ -303,12 +303,13 @@ update the fixture and the parser test together.
       uses the Yahoo chart and FX providers for every request it makes.
 - [x] **Phase 3 — controllers and stores.** `AppConfig`, `AppActions`, `App`, `QuoteStore`,
       the FX, market, refresh, quote, watchlist and cache controllers are in, and
-      `main.qml` keeps the public names the views use. It is down to about 1,127 lines;
+      `main.qml` keeps the public names the views use. It is down to about 1,015 lines;
       the remaining bulk is the theme, the tooltip and the two view compositions.
 - [ ] **Phase 4 — view decomposition.** In progress: the colour system moved to
       `platform/Theme.qml` (system palette injected, WCAG helpers tested) and the theme
-      migration to `AppConfig`. Next: split `SingleStockView` into header, quote, chart
-      and news, extract the shared components and remove the `rootItem.*` reach-through.
+      migration to `AppConfig`, and the news list/rows/menu moved to
+      `ui/single/NewsPane.qml`. Next: the chart canvas, the header and the quote block,
+      then the shared components.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the
       portfolio page, move backup into `settings/importExport/`.
 - [x] **Phase 6 — CI.** `.github/workflows/tests.yml` runs `tests/run.sh` on main and

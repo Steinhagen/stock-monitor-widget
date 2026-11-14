@@ -1,5 +1,5 @@
 // Delegates (all with required properties) may use the ids of this file, such as
-// singleStockRoot and newsList.
+// singleStockRoot and newsPane.
 pragma ComponentBehavior: Bound
 import QtQuick
 import QtQuick.Controls
@@ -8,6 +8,7 @@ import org.kde.kirigami as Kirigami
 import org.kde.plasma.core as PlasmaCore
 import "analyst"
 import "domain/curve.js" as ChartCurve
+import "single"
 
 Rectangle {
     id: singleStockRoot
@@ -912,7 +913,7 @@ Rectangle {
                                             cursorShape: Qt.PointingHandCursor
                                             onClicked: {
                                                 singleStockRoot.newsSource = newsSourceButton.modelData.source;
-                                                newsList.positionViewAtBeginning();
+                                                newsPane.positionViewAtBeginning();
                                             }
                                         }
                                     }
@@ -1072,185 +1073,15 @@ Rectangle {
                 }
 
                 // --- News pane: the headline list replaces the chart. ---
-                // Right click on the empty pane (loading or no headlines) opens the menu too.
-                MouseArea {
+                NewsPane {
+                    id: newsPane
                     anchors.fill: parent
-                    visible: singleStockRoot.newsMode
-                    acceptedButtons: Qt.RightButton
-                    onClicked: newsMenu.popup()
-                }
-
-                ListView {
-                    id: newsList
-                    anchors.fill: parent
-                    visible: singleStockRoot.newsMode && singleStockRoot.newsHasItems
-                    clip: true
-                    boundsBehavior: Flickable.StopAtBounds
-                    model: singleStockRoot.newsFilteredItems
-                    // Shown whenever the headlines overflow (not only while scrolling), so
-                    // the user can tell there is more below the visible rows.
-                    //
-                    // Do not bind this to contentHeight: a wrapped headline is taller when
-                    // the rows are narrower, so overflow -> rowWidth -> contentHeight ->
-                    // overflow is a binding loop. Track it imperatively instead. It settles
-                    // because widening the rows can only make the content shorter.
-                    property bool overflows: false
-                    function refreshOverflow() {
-                        if (height <= 0) return;
-                        if (!overflows && contentHeight > height + 1) overflows = true;
-                        else if (overflows && contentHeight <= height) overflows = false;
-                    }
-                    onContentHeightChanged: refreshOverflow()
-                    onHeightChanged: refreshOverflow()
-                    // Rows and footer end left of the scrollbar, so it never covers a
-                    // separator, the hover tint or the text.
-                    readonly property real rowWidth: width - (overflows ? newsScrollBar.width + 4 : 0)
-                    ScrollBar.vertical: ScrollBar {
-                        id: newsScrollBar
-                        policy: newsList.overflows ? ScrollBar.AlwaysOn : ScrollBar.AlwaysOff
-                    }
-
-                    delegate: PlasmaCore.ToolTipArea {
-                        id: newsRow
-                        required property var modelData
-                        required property int index
-                        width: newsList.rowWidth
-                        height: newsRowColumn.implicitHeight + 13
-                        // The full title, only when the row had to shorten it.
-                        mainText: newsRow.modelData.title
-                        active: newsTitle.truncated
-
-                        Rectangle {
-                            anchors.fill: parent
-                            anchors.bottomMargin: 1
-                            radius: 4
-                            visible: newsRowMouse.containsMouse
-                            color: Qt.rgba(singleStockRoot.rootItem.tickerColor.r,
-                                           singleStockRoot.rootItem.tickerColor.g,
-                                           singleStockRoot.rootItem.tickerColor.b, 0.06)
-                        }
-
-                        ColumnLayout {
-                            id: newsRowColumn
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.leftMargin: 6
-                            anchors.rightMargin: 6
-                            anchors.verticalCenter: parent.verticalCenter
-                            anchors.verticalCenterOffset: -0.5
-                            spacing: 3
-
-                            // Plain text: a headline is never rendered as markup.
-                            Text {
-                                id: newsTitle
-                                Layout.fillWidth: true
-                                text: newsRow.modelData.title
-                                textFormat: Text.PlainText
-                                wrapMode: Text.Wrap
-                                maximumLineCount: 2
-                                elide: Text.ElideRight
-                                color: singleStockRoot.rootItem.tickerColor
-                                font.pixelSize: 11
-                            }
-                            Text {
-                                Layout.fillWidth: true
-                                readonly property string age: singleStockRoot.rootItem.newsAge(newsRow.modelData.time)
-                                text: newsRow.modelData.publisher !== ""
-                                      ? (age !== "" ? newsRow.modelData.publisher + " · " + age : newsRow.modelData.publisher)
-                                      : age
-                                textFormat: Text.PlainText
-                                elide: Text.ElideRight
-                                color: singleStockRoot.rootItem.secondaryTextColor
-                                font.pixelSize: 9
-                            }
-                        }
-
-                        Rectangle {
-                            anchors.left: parent.left
-                            anchors.right: parent.right
-                            anchors.bottom: parent.bottom
-                            height: 1
-                            color: singleStockRoot.rootItem.chartBaseColor
-                        }
-
-                        MouseArea {
-                            id: newsRowMouse
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            acceptedButtons: Qt.LeftButton | Qt.RightButton
-                            onClicked: (mouse) => {
-                                if (mouse.button === Qt.RightButton) newsMenu.popup();
-                                else singleStockRoot.rootItem.openNewsLink(newsRow.modelData.link);
-                            }
-                        }
-                    }
-
-                    footer: Item {
-                        width: newsList.rowWidth
-                        height: 24
-
-                        Text {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 6
-                            anchors.verticalCenter: parent.verticalCenter
-                            text: (singleStockRoot.newsMoreSource === "BVB" ? i18n("More on BVB")
-                                   : singleStockRoot.newsMoreSource === "Google" ? i18n("More on Google")
-                                   : i18n("More on Yahoo Finance")) + " ›"
-                            textFormat: Text.PlainText
-                            color: singleStockRoot.rootItem.secondaryTextColor
-                            font.pixelSize: 9
-                            font.bold: true
-
-                            MouseArea {
-                                anchors.fill: parent
-                                cursorShape: Qt.PointingHandCursor
-                                onClicked: {
-                                    if (singleStockRoot.newsMoreSource === "BVB")
-                                        singleStockRoot.rootItem.openBvbNews(singleStockRoot.rootItem.singleTicker);
-                                    else if (singleStockRoot.newsMoreSource === "Google")
-                                        singleStockRoot.rootItem.openGoogleNews(singleStockRoot.rootItem.singleTicker);
-                                    else
-                                        singleStockRoot.rootItem.openYahooNews(singleStockRoot.rootItem.singleTicker);
-                                }
-                            }
-                        }
-                    }
-                }
-
-                Text {
-                    anchors.centerIn: parent
-                    width: parent.width - 24
-                    visible: singleStockRoot.newsMode && singleStockRoot.newsStateText !== ""
-                    text: singleStockRoot.newsStateText
-                    textFormat: Text.PlainText
-                    horizontalAlignment: Text.AlignHCenter
-                    wrapMode: Text.WordWrap
-                    color: singleStockRoot.rootItem.secondaryTextColor
-                    font.pixelSize: 10
-                }
-
-                Menu {
-                    id: newsMenu
-
-                    MenuItem {
-                        text: i18n("Open on Yahoo Finance")
-                        onTriggered: singleStockRoot.rootItem.openYahooNews(singleStockRoot.rootItem.singleTicker)
-                    }
-                    MenuItem {
-                        text: i18n("Open on BVB")
-                        visible: singleStockRoot.newsSources.indexOf("BVB") >= 0
-                        onTriggered: singleStockRoot.rootItem.openBvbNews(singleStockRoot.rootItem.singleTicker)
-                    }
-                    MenuItem {
-                        text: i18n("Open on Google")
-                        visible: singleStockRoot.newsSources.indexOf("Google") >= 0
-                        onTriggered: singleStockRoot.rootItem.openGoogleNews(singleStockRoot.rootItem.singleTicker)
-                    }
-                    MenuItem {
-                        text: i18n("Refresh news")
-                        onTriggered: singleStockRoot.rootItem.requestNews(singleStockRoot.rootItem.singleTicker, true)
-                    }
+                    applet: singleStockRoot.rootItem
+                    active: singleStockRoot.newsMode
+                    items: singleStockRoot.newsFilteredItems
+                    stateText: singleStockRoot.newsStateText
+                    moreSource: singleStockRoot.newsMoreSource
+                    sources: singleStockRoot.newsSources
                 }
 
                 // The hover/click area lives inside the chart now. It must not cover the
