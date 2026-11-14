@@ -265,13 +265,7 @@ Item {
             if (!g || g.entries.length === 0) continue;
             g.entries.sort(function(a, b) { return b.time - a.time; });
             var counts = Analyst.directions(g.entries);
-            var direction = "neutral";
-            if (counts.up > 0 && counts.down === 0) direction = "up";
-            else if (counts.down > 0 && counts.up === 0) direction = "down";
-            else if (counts.up === 0 && counts.down === 0) {
-                if (counts.maintain > 0 && counts.announce === 0) direction = "maintain";
-                else if (counts.announce > 0 && counts.maintain === 0) direction = "announce";
-            }
+            var direction = directionForCounts(counts);
             result.push({
                 x: g.xSum / g.entries.length,
                 direction: direction,
@@ -281,7 +275,38 @@ Item {
             });
         }
         result.sort(function(a, b) { return a.x - b.x; });
-        return result;
+
+        // Bucket edges can leave two markers closer than their own width, so their
+        // glyphs overlap. Merge those groups into one marker that reflects every
+        // action, keeping the combined entries newest-first.
+        var merged = [];
+        for (var m = 0; m < result.length; m++) {
+            var mark = result[m];
+            var last = merged[merged.length - 1];
+            if (last && Math.abs(mark.x - last.x) < 18) {
+                var combined = last.entries.concat(mark.entries);
+                combined.sort(function(a, b) { return b.time - a.time; });
+                var totalBefore = last.total + mark.total;
+                last.x = (last.x * last.total + mark.x * mark.total) / totalBefore;
+                last.total = combined.length;
+                last.entries = combined;
+                last.newest = combined[0];
+                last.direction = directionForCounts(Analyst.directions(combined));
+            } else {
+                merged.push(mark);
+            }
+        }
+        return merged;
+    }
+
+    function directionForCounts(counts) {
+        if (counts.up > 0 && counts.down === 0) return "up";
+        if (counts.down > 0 && counts.up === 0) return "down";
+        if (counts.up === 0 && counts.down === 0) {
+            if (counts.maintain > 0 && counts.announce === 0) return "maintain";
+            if (counts.announce > 0 && counts.maintain === 0) return "announce";
+        }
+        return "neutral";
     }
 
     function money(value) {
