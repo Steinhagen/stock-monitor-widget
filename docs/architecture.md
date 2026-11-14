@@ -7,7 +7,7 @@ end of this file). Reviewed with the 1.7 feature set on 2026-11-14.
 ## Why this exists
 
 The widget works, but three files still carry most of the behaviour: `main.qml`
-(1,616 lines, ~50 functions), `SingleStockView.qml` (2,231) and
+(1,181 lines, ~35 functions), `SingleStockView.qml` (2,231) and
 `config/portfolio.qml` (1,478) — together about half of the source tree. That has
 concrete costs:
 
@@ -305,9 +305,10 @@ update the fixture and the parser test together.
       `AppActions`, `App.qml`; `main.qml` becomes composition. In progress:
       `app/AppConfig.qml`, `app/App.qml`, `controllers/FxController.qml`,
       `controllers/MarketController.qml`, `state/QuoteStore.qml`,
-      `controllers/SingleQuoteController.qml` and `controllers/WatchlistController.qml`
-      (which owns the row model) are in. The cached-quote layer and `AppActions` are
-      next.
+      `controllers/SingleQuoteController.qml`, `controllers/WatchlistController.qml`
+      (row model), `controllers/QuoteCacheController.qml` (snapshot + startup retry)
+      and `app/AppActions.qml` (selection, mouse actions, chart buttons) are in. The
+      refresh orchestration and the theme are next.
 - [ ] **Phase 4 — view decomposition.** Split `SingleStockView`; extract shared
       components; `Theme`; remove `rootItem.*` from components.
 - [ ] **Phase 5 — settings reorganisation.** Move pages under `settings/`, split the

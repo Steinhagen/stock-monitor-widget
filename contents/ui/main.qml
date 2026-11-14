@@ -44,6 +44,21 @@ PlasmoidItem {
 
     readonly property var stockModel: watchlist.model
 
+    QuoteCacheController {
+        id: quoteCache
+        applet: root
+        model: watchlist.model
+        configuration: Plasmoid.configuration
+        config: app.config
+    }
+
+    AppActions {
+        id: actions
+        applet: root
+        model: watchlist.model
+        configuration: Plasmoid.configuration
+    }
+
     // --- CONFIGURATION ---
     // The compact panel indicator is always transparent over the panel. On the desktop,
     // Plasma leaves the background to the system, while Application paints the cards.
@@ -348,14 +363,13 @@ PlasmoidItem {
     // can start the widget before the network (or a VPN) is up; showing the previous
     // values with their real timestamp keeps the widget useful as long as they are
     // never presented as live prices.
-    property double cachedQuotesTime: Number(app.config.cachedQuotesTime) || 0
+    property alias cachedQuotesTime: quoteCache.cachedQuotesTime
     // True while the list (or, in single mode, the whole view) still shows cached values.
-    property bool showingCachedData: false
+    property alias showingCachedData: quoteCache.showingCachedData
     // Whether the values in the panel indicator come from the snapshot. In multi mode one
     // row can still be cached while another is already live, so the panel marks its own
     // ticker instead of trusting the list-wide flag.
     property alias panelCurrentIsCached: quoteStore.panelCurrentIsCached
-    property var cachedQuotesSnapshot: null
     readonly property string cachedQuotesLabel: root.cachedQuotesTime > 0
         ? new Date(root.cachedQuotesTime * 1000).toLocaleString(Qt.locale(), Locale.ShortFormat)
         : ""
@@ -599,178 +613,38 @@ PlasmoidItem {
 
     // Range selected from the chart buttons. It is stored separately from the list's
     // configured range, so switching the chart range does not reload the whole list.
-    function setChartViewRange(range) {
-        if (range === root.effectiveChartRange) return;
-        // Apply and fetch it right away; the config change is for persistence only.
-        root.chartViewRangeActive = range;
-        if (root.singleTicker.trim() !== "")
-            root.fetchSingleStock(root.singleTicker, range);
-        try {
-            Plasmoid.configuration.chartViewRange = range;
-        } catch (e) {
-            console.log("Error saving chart range: " + e);
-        }
-    }
+    function setChartViewRange(range) { actions.setChartViewRange(range); }
 
     // Chart type selected from the chart buttons. It writes the same setting as the
     // Chart & News page, so both stay in sync.
-    function setChartStyle(style) {
-        if (style === root.chartStyle) return;
-        try {
-            Plasmoid.configuration.chartStyle = style;
-        } catch (e) {
-            console.log("Error saving chart style: " + e);
-        }
-    }
+    function setChartStyle(style) { actions.setChartStyle(style); }
 
     // Side-by-side layout: the divider applies the width live and the configuration is
     // written only when the drag ends, so moving it does not hammer the config file.
-    function setTwoColumnLeftWidth(width) {
-        var value = Math.round(width);
-        if (value < 0) value = 0;
-        if (value !== root.twoColumnLeftWidth) root.twoColumnLeftWidth = value;
-    }
-    function saveTwoColumnLeftWidth() {
-        try {
-            Plasmoid.configuration.twoColumnLeftWidth = root.twoColumnLeftWidth;
-        } catch (e) {
-            console.log("Error saving two-column width: " + e);
-        }
-    }
+    function setTwoColumnLeftWidth(width) { actions.setTwoColumnLeftWidth(width); }
+    function saveTwoColumnLeftWidth() { actions.saveTwoColumnLeftWidth(); }
 
     // Copy the list row's values (configured data range) into the panel indicator.
-    function updatePanelFromRow(ticker) {
-        for (var i = 0; i < stockModel.count; i++) {
-            var row = stockModel.get(i);
-            if (row.ticker !== ticker) continue;
-            root.panelCurrentPrice = row.price;
-            root.panelCurrentPercent = row.pct;
-            root.panelCurrentIsPositive = row.isPos;
-            root.panelCurrentIsCached = row.cached === true;
-            return;
-        }
-    }
-
-    // ListModel turns a top-level array role into a nested ListModel, so the chart
-    // arrays are cached as JSON strings and decoded here. Without this, selecting a
-    // list row handed a ListModel to the Canvas, which blanked the chart.
-    function chartArray(value) {
-        if (Array.isArray(value)) return value;
-        if (typeof value === "string") {
-            try {
-                var parsed = JSON.parse(value);
-                return Array.isArray(parsed) ? parsed : [];
-            } catch (e) { return []; }
-        }
-        return [];
-    }
+    function updatePanelFromRow(ticker) { actions.updatePanelFromRow(ticker); }
 
     // Select a watchlist row. The list already has the row's quote, so only the chart
     // needs a request; refreshing the whole list here made all rows update in chunks
     // before the selected ticker's chart arrived.
-    function selectTicker(ticker, persist) {
-        var clean = ticker ? String(ticker).trim() : "";
-        if (clean === "") return;
-        root.manualPanelTickerOverride = clean;
-        root.panelTicker = clean;
-        // Auto-cycle changes the panel stock every few seconds; persisting those would
-        // rewrite the config constantly. Only explicit user selections are remembered.
-        if (persist !== false) {
-            try {
-                Plasmoid.configuration.selectedTicker = clean;
-            } catch (e) {
-                console.log("Error saving selected ticker: " + e);
-            }
-        }
-        root.updatePanelFromRow(clean);
-
-        // Use the row that is already in the list so the title, quote, portfolio and
-        // graph switch together, then refresh the chart in the background. Without
-        // this, the header changed immediately while the chart waited for the reply.
-        var row = null;
-        for (var i = 0; i < stockModel.count; i++) {
-            if (stockModel.get(i).ticker === clean) {
-                row = stockModel.get(i);
-                break;
-            }
-        }
-        var chartFromCache = false;
-        // A row that has not been quoted yet has no exchange metadata; fall back to the
-        // suffix so the badge appears immediately.
-        root.singleExchange = Exchanges.shortLabel(clean, "", "");
-        root.singleExchangeFull = root.singleExchange;
-        if (row) {
-            root.singleCompanyName = row.name;
-            root.singleExchange = row.exchange || root.singleExchange;
-            root.singleExchangeFull = row.exchangeFull || root.singleExchange;
-            root.currentRawPrice = row.currentRaw;
-            root.currentPrice = row.price;
-            root.currencySym = row.currencySym;
-            root.quoteCurrency = row.currency;
-            root.previousClose = row.prevClose;
-            // The change and the chart itself depend on the selected range. They can only
-            // be reused when the list and the chart share the range.
-            if (root.effectiveChartRange === root.chartRange) {
-                root.isPositive = row.isPos;
-                root.priceChange = row.change;
-                root.percentChange = row.pct;
-                root.chartDataPoints = root.chartArray(row.chartPoints);
-                root.chartTimestamps = root.chartArray(row.chartTimes);
-                var sessions = row.chartSessions;
-                root.chartSessions = (sessions && sessions.preValues !== undefined)
-                                     ? sessions : null;
-                root.chartCandles = root.chartArray(row.chartCandles);
-                root.chartReferencePrice = row.chartRef;
-                root.chartPreSession = row.chartPre === true;
-                root.chartSessionStart = row.chartSessionStart || 0;
-                root.chartSessionCurrent = row.chartSessionCurrent !== false;
-                root.quoteTimestamp = row.quoteTime || 0;
-                chartFromCache = root.chartDataPoints.length > 0;
-            }
-        }
-
-        // Switching to a row uses what was already fetched for it; the list refresh (and
-        // middle-click) keep that data current. Ask for a chart only when the row has no
-        // cached chart yet, or when the chart range differs from the list's (the cache
-        // holds the list range).
-        var needsChart = !chartFromCache || root.effectiveChartRange !== root.chartRange;
-        if (root.singleTicker !== clean) {
-            root.singleTicker = clean;
-            if (needsChart) root.fetchSingleStock(clean, root.effectiveChartRange);
-        } else if (needsChart) {
-            root.fetchSingleStock(clean, root.effectiveChartRange);
-        }
-    }
+    function selectTicker(ticker, persist) { actions.selectTicker(ticker, persist); }
 
     // --- MOUSE ACTIONS ---
     // Open the Yahoo Finance quote page for a symbol. Used by the configurable mouse
     // actions and by the context menus, so all paths behave the same.
-    function openYahooQuote(symbol) {
-        var clean = symbol ? String(symbol).trim() : "";
-        if (clean === "") return;
-        Qt.openUrlExternally("https://finance.yahoo.com/quote/" + clean);
-    }
+    function openYahooQuote(symbol) { actions.openYahooQuote(symbol); }
 
     // Left click on a watchlist row: select it (recommended) or open its quote page.
-    function performRowLeftClick(symbol) {
-        if (root.mouseRowLeftAction === "open") root.openYahooQuote(symbol);
-        else root.selectTicker(symbol);
-    }
+    function performRowLeftClick(symbol) { actions.performRowLeftClick(symbol); }
 
     // Middle click on a row, the chart or the panel indicator. Returns true when the
     // action was a refresh, so the caller can show the existing opacity flicker.
-    function performMiddleClick(symbol) {
-        if (root.mouseMiddleAction === "refresh") {
-            root.refreshData();
-            return true;
-        }
-        if (root.mouseMiddleAction === "open") root.openYahooQuote(symbol);
-        return false;
-    }
+    function performMiddleClick(symbol) { return actions.performMiddleClick(symbol); }
 
-    function performDoubleClick(symbol) {
-        if (root.mouseDoubleClickAction === "open") root.openYahooQuote(symbol);
-    }
+    function performDoubleClick(symbol) { actions.performDoubleClick(symbol); }
 
     // --- PRE-MARKET / AFTER-HOURS ---
     // The extended-hours state, the session clock and the selection rules live in
@@ -862,327 +736,19 @@ PlasmoidItem {
         refreshData();
     }
 
-    // --- STARTUP RETRY ---
-    // Quote requests are one-shot and the periodic refresh can be minutes away. At login
-    // Plasma can start the widget before the network (or a VPN) is ready, so a failed
-    // first batch used to leave the placeholders on screen until the regular interval.
-    // Retry soon after a failure, backing off to 30 s, and stop as soon as a quote
-    // arrives. The attempt cap keeps an offline widget from polling forever; after it,
-    // the normal refresh timer takes over.
-    property int quoteRetryDelay: 5
-    property int quoteRetryAttempts: 0
-    property bool quoteRetryScheduled: false
-    // Set only by a successful network response, never by cached data. This keeps the
-    // fast retry working even if a future cache fills the view before the first fetch.
-    property bool quoteDataReceived: false
-    Timer {
-        id: quoteRetryTimer
-        repeat: false
-        onTriggered: {
-            root.quoteRetryScheduled = false;
-            if (root.quoteDataReceived || root.quoteRetryAttempts >= 8) return;
-            root.quoteRetryAttempts++;
-            root.quoteRetryDelay = Math.min(root.quoteRetryDelay * 2, 30);
-            // Respect the active-hours and weekend settings, like the normal timer.
-            root.checkTimeAndRefresh();
-        }
-    }
-    function scheduleQuoteRetry() {
-        if (root.quoteDataReceived || root.quoteRetryScheduled
-                || root.quoteRetryAttempts >= 8) return;
-        root.quoteRetryScheduled = true;
-        quoteRetryTimer.interval = root.quoteRetryDelay * 1000;
-        quoteRetryTimer.start();
-    }
-    function noteQuoteReceived() {
-        root.quoteDataReceived = true;
-        root.quoteRetryDelay = 5;
-        root.quoteRetryAttempts = 0;
-        root.quoteRetryScheduled = false;
-        if (quoteRetryTimer.running) quoteRetryTimer.stop();
-        // In multi mode the list stays marked as cached until every restored row has its
-        // own network reply; one answered ticker must not make the others look live. In
-        // single mode the caller that owns the header values clears the flag itself.
-        if (root.isMultiMode) root.refreshCachedRowsState();
-    }
-
-    // --- CACHED QUOTES ---
-    // The last successful batch is stored in the config (like the exchange rates) so a
-    // launch without a network still has prices. Only the values needed for display are
-    // saved: the chart is fetched fresh, since a stale graph would look live.
-    readonly property int cachedQuotesMaxAge: 7 * 24 * 60 * 60
-    // A restored row is replaced by its own reply within moments on a working network.
-    // If one ticker never answers (delisted, typo) it must not keep its old price while
-    // the rest of the list shows live data, so it falls back to a placeholder after this
-    // grace period. A total outage never starts the timer, so the cache stays up.
-    readonly property int cachedRowGraceMs: 15000
-    Timer {
-        id: cachedRowGraceTimer
-        interval: root.cachedRowGraceMs
-        repeat: false
-        onTriggered: root.dropUnrefreshedCachedRows()
-    }
-    function refreshCachedRowsState() {
-        var any = false;
-        for (var i = 0; i < stockModel.count; i++) {
-            if (stockModel.get(i).cached === true) { any = true; break; }
-        }
-        root.showingCachedData = any;
-        if (!any) {
-            if (cachedRowGraceTimer.running) cachedRowGraceTimer.stop();
-        } else if (root.quoteDataReceived && !cachedRowGraceTimer.running) {
-            cachedRowGraceTimer.start();
-        }
-    }
-    // Drops the rows the network never refreshed, after the grace period. Keeping them
-    // unmarked would present yesterday's price as live; a placeholder is honest.
-    function dropUnrefreshedCachedRows() {
-        var dropped = false;
-        for (var i = 0; i < stockModel.count; i++) {
-            var row = stockModel.get(i);
-            if (row.cached !== true) continue;
-            stockModel.set(i, {
-                "price": "---", "change": "", "pct": "", "isPos": true,
-                "currentRaw": 0.0, "prevClose": 0.0, "quoteTime": 0.0,
-                "cached": false
-            });
-            dropped = true;
-            if (row.ticker === root.panelTicker) {
-                root.panelCurrentPrice = "---";
-                root.panelCurrentPercent = "+0.00%";
-                root.panelCurrentIsPositive = true;
-                root.panelCurrentIsCached = false;
-                root.currentPrice = "---";
-                root.priceChange = "";
-                root.percentChange = "";
-                root.currentRawPrice = 0;
-                root.previousClose = 0;
-                root.quoteTimestamp = 0;
-            }
-        }
-        root.showingCachedData = false;
-        if (dropped) root.queueQuotesCacheSave();
-    }
-
-    // Parses the stored snapshot. Kept separate from readCachedQuotes() because the
-    // startup refresh timer can fire before Component.onCompleted, and the list still
-    // needs the rows on its first pass.
-    function parseCachedQuotes() {
-        var raw = app.config.cachedQuotes;
-        var saved = Number(app.config.cachedQuotesTime) || 0;
-        if (!raw || !(saved > 0)) return null;
-        var data;
-        try { data = JSON.parse(raw); } catch (e) { return null; }
-        return data || null;
-    }
-
-    // Restores the cached snapshot at startup. The single view gets its values here; the
-    // multi rows are filled by fetchMultiStocks(), which owns the row order.
-    function readCachedQuotes() {
-        if (root.quoteDataReceived) return;
-        var data = root.parseCachedQuotes();
-        if (!data) return;
-        var saved = Number(app.config.cachedQuotesTime) || 0;
-        root.cachedQuotesSnapshot = data;
-        root.cachedQuotesTime = saved;
-        if (root.isMultiMode) {
-            // The refresh may be skipped at startup (weekend or outside the configured
-            // hours); create the rows anyway so the cached values have somewhere to go.
-            root.ensureStockRows(root.configuredTickers());
-            root.applyCachedQuotesToRows();
-            return;
-        }
-        var s = data.single;
-        // Never show another instrument's values after the configured ticker changed,
-        // nor a change/percentage that belongs to a different data range.
-        if (!s || s.ticker !== root.singleTicker || s.range !== root.effectiveChartRange
-                || !s.price || s.price === "---") return;
-        // Each half of the snapshot carries its own timestamp, so refreshing the list
-        // never makes an older single-mode value look newer than it is.
-        var singleTime = Number(data.singleTime) || saved;
-        var now = Math.floor(Date.now() / 1000);
-        if (now - singleTime > root.cachedQuotesMaxAge) return;
-        root.cachedQuotesTime = singleTime;
-        root.showingCachedData = true;
-        root.singleCompanyName = s.name || root.singleTicker;
-        root.singleExchange = s.exchange || Exchanges.shortLabel(root.singleTicker, "", "");
-        root.singleExchangeFull = s.exchangeFull || root.singleExchange;
-        root.currentPrice = s.price;
-        root.priceChange = s.change || "";
-        root.percentChange = s.pct || "";
-        root.isPositive = s.isPos !== false;
-        root.currentRawPrice = Number(s.currentRaw) || 0;
-        root.previousClose = Number(s.prevClose) || 0;
-        root.currencySym = s.currencySym || "";
-        root.quoteCurrency = s.currency || "";
-        root.quoteTimestamp = Number(s.quoteTime) || 0;
-        // The panel follows the configured range, while the header may show the chart's
-        // own range. Restore the panel values only when the two ranges agree.
-        if (root.effectiveChartRange === root.chartRange) {
-            root.panelCurrentPrice = root.currentPrice;
-            root.panelCurrentPercent = root.percentChange;
-            root.panelCurrentIsPositive = root.isPositive;
-            root.panelCurrentIsCached = true;
-        }
-        root.lastUpdated = new Date(singleTime * 1000).toLocaleTimeString(Qt.locale(), "HH:mm");
-        root.nextUpdate = "";
-        root.singleDataRange = s.range;
-        root.singleDataTicker = s.ticker;
-    }
-
-    // Fills the list placeholders from the cached snapshot, matching by ticker so the
-    // configured order and any newly added symbols are respected. Rows that already have
-    // a live value are left alone, which also makes this safe on retries.
-    function applyCachedQuotesToRows() {
-        if (!root.cachedQuotesSnapshot) root.cachedQuotesSnapshot = root.parseCachedQuotes();
-        var data = root.cachedQuotesSnapshot;
-        if (!data || !data.rows || root.quoteDataReceived) return;
-        // The stored change and percentage belong to the range they were fetched with.
-        if ((data.rowsRange || data.range) !== root.chartRange) return;
-        var rowsTime = Number(data.rowsTime) || root.cachedQuotesTime;
-        var now = Math.floor(Date.now() / 1000);
-        if (rowsTime > 0 && now - rowsTime > root.cachedQuotesMaxAge) return;
-        var applied = false;
-        for (var i = 0; i < data.rows.length; i++) {
-            var c = data.rows[i];
-            if (!c || !c.ticker || !c.price || c.price === "---") continue;
-            for (var k = 0; k < stockModel.count; k++) {
-                var row = stockModel.get(k);
-                if (row.ticker !== c.ticker || row.price !== "---") continue;
-                stockModel.set(k, {
-                    "name": c.name || c.ticker,
-                    "price": c.price || "---",
-                    "change": c.change || "",
-                    "pct": c.pct || "",
-                    "isPos": c.isPos !== false,
-                    "currentRaw": Number(c.currentRaw) || 0,
-                    "prevClose": Number(c.prevClose) || 0,
-                    "currencySym": c.currencySym || "",
-                    "currency": c.currency || "",
-                    "exchange": c.exchange || Exchanges.shortLabel(c.ticker, "", ""),
-                    "exchangeFull": c.exchangeFull || "",
-                    "quoteTime": Number(c.quoteTime) || 0,
-                    "cached": true
-                });
-                applied = true;
-                break;
-            }
-        }
-        if (!applied) return;
-        root.cachedQuotesTime = rowsTime > 0 ? rowsTime : root.cachedQuotesTime;
-        root.showingCachedData = true;
-        root.lastUpdated = new Date(root.cachedQuotesTime * 1000).toLocaleTimeString(Qt.locale(), "HH:mm");
-        root.nextUpdate = "";
-        root.updatePanelFromRow(root.panelTicker);
-        // The two-column desktop view also shows the selected row in the single column.
-        root.applyCachedSingleFromRow(root.singleTicker);
-    }
-
-    // Mirrors selectTicker() for cached rows: price and currency always, the change and
-    // the quote time only when the chart shares the list's range (otherwise they belong
-    // to a different period and would be labelled incorrectly).
-    function applyCachedSingleFromRow(ticker) {
-        for (var i = 0; i < stockModel.count; i++) {
-            var row = stockModel.get(i);
-            if (row.ticker !== ticker || row.price === "---") continue;
-            root.singleCompanyName = row.name || ticker;
-            root.singleExchange = row.exchange || Exchanges.shortLabel(ticker, "", "");
-            root.singleExchangeFull = row.exchangeFull || root.singleExchange;
-            root.currentRawPrice = Number(row.currentRaw) || 0;
-            root.currentPrice = row.price;
-            root.currencySym = row.currencySym || "";
-            root.quoteCurrency = row.currency || "";
-            root.previousClose = Number(row.prevClose) || 0;
-            if (root.effectiveChartRange === root.chartRange) {
-                root.isPositive = row.isPos !== false;
-                root.priceChange = row.change || "";
-                root.percentChange = row.pct || "";
-                root.quoteTimestamp = Number(row.quoteTime) || 0;
-            }
-            return;
-        }
-    }
-
-    // Writes are debounced because a refresh answers one ticker at a time.
-    Timer {
-        id: quotesCacheTimer
-        interval: 1500
-        repeat: false
-        onTriggered: root.writeQuotesCache()
-    }
-    function queueQuotesCacheSave() {
-        if (root.showingCachedData) return;
-        quotesCacheTimer.restart();
-    }
-    function writeQuotesCache() {
-        var previous = null;
-        try { previous = JSON.parse(app.config.cachedQuotes || "null"); } catch (e) {}
-        var now = Math.floor(Date.now() / 1000);
-        var data = { "time": now, "range": root.chartRange, "rowsRange": root.chartRange,
-                     "rows": [], "rowsTime": 0, "single": null, "singleTime": 0 };
-
-        for (var i = 0; i < stockModel.count; i++) {
-            var row = stockModel.get(i);
-            // Never re-stamp a restored value as if it had just been fetched; a save that
-            // runs while some rows are still cached stores only the answered ones.
-            if (!row || !row.ticker || row.cached === true || row.price === "---") continue;
-            data.rows.push({
-                "ticker": row.ticker, "name": row.name,
-                "price": row.price, "change": row.change, "pct": row.pct,
-                "isPos": row.isPos,
-                "currentRaw": row.currentRaw, "prevClose": row.prevClose,
-                "currencySym": row.currencySym, "currency": row.currency,
-                "exchange": row.exchange, "exchangeFull": row.exchangeFull,
-                "quoteTime": row.quoteTime
-            });
-        }
-        if (data.rows.length > 0) {
-            data.rowsTime = now;
-        } else if (previous && previous.rows && previous.rows.length > 0) {
-            // The other view is the live source right now; keep its older snapshot with
-            // its own timestamp instead of presenting it as just refreshed.
-            data.rows = previous.rows;
-            data.rowsRange = previous.rowsRange || previous.range || data.rowsRange;
-            data.rowsTime = Number(previous.rowsTime) || Number(previous.time) || 0;
-        }
-
-        if (!root.isMultiMode && !root.showingCachedData
-                && root.singleTicker !== "" && root.singleDataTicker === root.singleTicker
-                && root.currentPrice !== "---") {
-            data.single = {
-                "ticker": root.singleTicker,
-                "name": root.singleCompanyName,
-                "price": root.currentPrice,
-                "change": root.priceChange,
-                "pct": root.percentChange,
-                "isPos": root.isPositive,
-                "currentRaw": root.currentRawPrice,
-                "prevClose": root.previousClose,
-                "currencySym": root.currencySym,
-                "currency": root.quoteCurrency,
-                "exchange": root.singleExchange,
-                "exchangeFull": root.singleExchangeFull,
-                "quoteTime": root.quoteTimestamp,
-                // The change and percentage belong to the range that was fetched; a
-                // different range after a restart must not reuse them.
-                "range": root.singleDataRange || root.effectiveChartRange
-            };
-            data.singleTime = now;
-        } else if (previous && previous.single) {
-            data.single = previous.single;
-            data.singleTime = Number(previous.singleTime) || Number(previous.time) || 0;
-        }
-
-        if (data.rows.length === 0 && !data.single) return;
-        // The top-level time is the newest part; each part is still aged by its own.
-        data.time = Math.max(data.rowsTime, data.singleTime) || now;
-        try {
-            Plasmoid.configuration.cachedQuotes = JSON.stringify(data);
-            Plasmoid.configuration.cachedQuotesTime = String(data.time);
-            root.cachedQuotesTime = data.time;
-            root.cachedQuotesSnapshot = data;
-        } catch (e) { console.log("Error saving cached quotes: " + e); }
-    }
+    // --- STARTUP RETRY / CACHED QUOTES ---
+    // The retry back-off and the persisted quote snapshot live in QuoteCacheController;
+    // these wrappers keep the API the quote controllers and the views already use.
+    function scheduleQuoteRetry() { quoteCache.scheduleQuoteRetry(); }
+    function noteQuoteReceived() { quoteCache.noteQuoteReceived(); }
+    function readCachedQuotes() { quoteCache.read(); }
+    function parseCachedQuotes() { return quoteCache.parse(); }
+    function applyCachedQuotesToRows() { quoteCache.applyToRows(); }
+    function applyCachedSingleFromRow(ticker) { quoteCache.applySingleFromRow(ticker); }
+    function refreshCachedRowsState() { quoteCache.refreshRowsState(); }
+    function dropUnrefreshedCachedRows() { quoteCache.dropUnrefreshed(); }
+    function queueQuotesCacheSave() { quoteCache.queueSave(); }
+    function writeQuotesCache() { quoteCache.write(); }
 
     function fetchSingleStock(symbol, range) {
         singleQuote.fetch(symbol, range);
@@ -1219,10 +785,10 @@ PlasmoidItem {
     function clearStockRows() {
         stockModel.clear();
         // Do not persist the rows that are about to be rebuilt.
-        if (quotesCacheTimer.running) quotesCacheTimer.stop();
+        quoteCache.stopPendingSave();
         root.showingCachedData = false;
         root.panelCurrentIsCached = false;
-        if (cachedRowGraceTimer.running) cachedRowGraceTimer.stop();
+        quoteCache.stopGrace();
     }
     onSingleTickerChanged: {
         // In multi mode selecting a row reuses its cached chart; the periodic list
@@ -1231,7 +797,7 @@ PlasmoidItem {
         if (!root.isMultiMode) {
             // The values on screen (and any save already queued) belong to the previous
             // ticker, not to the one that is about to be fetched.
-            quotesCacheTimer.stop();
+            quoteCache.stopPendingSave();
             root.singleDataRange = "";
             root.singleDataTicker = "";
             // Drop the previous symbol's exchange badge; the suffix fallback is enough
@@ -1264,7 +830,7 @@ PlasmoidItem {
         root.clearStockRows();
         if (!isMultiMode) {
             root.singleTicker = Qt.binding(function() { return app.config.ticker; });
-            quotesCacheTimer.stop();
+            quoteCache.stopPendingSave();
             root.singleDataRange = "";
             root.singleDataTicker = "";
             root.singleCompanyName = root.loadingText;
@@ -1288,7 +854,7 @@ PlasmoidItem {
     onChartRangeChanged: {
         // The values on screen (and any save already queued) belong to the previous
         // range, not to the one that is about to be fetched.
-        quotesCacheTimer.stop();
+        quoteCache.stopPendingSave();
         root.singleDataRange = "";
         root.singleDataTicker = "";
         // A cached change belongs to the range it was fetched with; do not keep it on
