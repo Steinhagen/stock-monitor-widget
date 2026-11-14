@@ -142,7 +142,6 @@ Item {
                     text: line.summary ? applet.formatMoney(line.moneySymbol, line.summary.plValue, true) + " (" + line.plPercentString + ")" : ""
                     color: line.plColor
                     font.pixelSize: line.fontSize
-                    font.weight: Font.Bold
                 }
                 Text {
                     id: plPercentText
@@ -151,7 +150,6 @@ Item {
                     text: line.plPercentString
                     color: line.plColor
                     font.pixelSize: line.fontSize
-                    font.weight: Font.Bold
                 }
             }
         }

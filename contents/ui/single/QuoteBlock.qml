@@ -123,7 +123,6 @@ ColumnLayout {
                                   ? host.extendedQuote.change + " (" + host.extendedQuote.pct + ")" : ""
                             color: parent.accent
                             font.pixelSize: 9
-                            font.weight: Font.Bold
                         }
                     }
                 }

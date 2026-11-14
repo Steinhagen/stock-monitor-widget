@@ -116,7 +116,7 @@ MouseArea {
     Text { id: probeTicker; visible: false; font.pixelSize: 9; font.weight: Font.Bold; renderType: Text.NativeRendering }
     Text { id: probeTag; visible: false; font.pixelSize: 8; font.weight: Font.Bold; renderType: Text.NativeRendering }
     Text { id: probePrice; visible: false; font.pixelSize: 11; font.weight: Font.Bold; renderType: Text.NativeRendering }
-    Text { id: probeBadge; visible: false; font.pixelSize: 10; font.weight: Font.Black; renderType: Text.NativeRendering }
+    Text { id: probeBadge; visible: false; font.pixelSize: 10; renderType: Text.NativeRendering }
 
     function measureWidest() {
         var tickers = [], prices = [], pcts = [];
@@ -355,7 +355,6 @@ MouseArea {
                         text: compactRoot.shownPercent
                         color: compactRoot.shownPositive ? applet.panelPositiveColor : applet.panelNegativeColor
                         font.pixelSize: 10
-                        font.weight: Font.Black
                         renderType: Text.NativeRendering
                     }
                 }

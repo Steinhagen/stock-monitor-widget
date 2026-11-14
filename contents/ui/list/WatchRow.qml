@@ -245,7 +245,7 @@ Item {
                         id: secondLine
                         readonly property var ext: rowRoot.rowExt
 
-                        FontMetrics { id: secondLineMetrics; font.pixelSize: 10; font.bold: true }
+                        FontMetrics { id: secondLineMetrics; font.pixelSize: 10 }
 
                         // Longest wording that fits in `avail` pixels, richest first:
                         // "After-Hours · closed    $342.65    -0.28 (-0.08%)" ... down to just the price.
@@ -282,7 +282,7 @@ Item {
                             var out = "";
                             if (pick[0] !== null) out += '<font color="' + rowRoot.applet.secondaryTextColor + '">' + pick[0] + '</font>' + gap;
                             // With no change shown, colour the price itself so the direction is still visible.
-                            out += '<font color="' + (pick[2] === null ? accent : rowRoot.applet.priceColor) + '"><b>' + pick[1] + '</b></font>';
+                            out += '<font color="' + (pick[2] === null ? accent : rowRoot.applet.priceColor) + '">' + pick[1] + '</font>';
                             if (pick[2] !== null) out += gap + '<font color="' + accent + '">' + pick[2] + '</font>';
                             return out;
                         }
@@ -329,7 +329,6 @@ Item {
                             text: rowRoot.row.change + " (" + rowRoot.row.pct + ")"
                             color: rowRoot.row.isPos ? rowRoot.applet.positiveColor : rowRoot.applet.negativeColor
                             font.pixelSize: 11
-                            font.weight: Font.Black
                         }
                     }
                 }
